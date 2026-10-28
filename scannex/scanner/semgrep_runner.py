@@ -57,7 +57,7 @@ class SemgrepRunner:
             semgrep_bin,
             "scan",
             "--config",
-            "auto",
+            "p/security-audit",
             "--metrics=off",
             "--disable-version-check",
             "--json",
@@ -227,13 +227,14 @@ class SemgrepRunner:
 
             if canary_type == CanaryType.FILE_MARKER:
                 temp_dir = Path(tempfile.gettempdir())
-                file_marker_path = str(temp_dir / f"{canary_token.lower()}.txt")
-                payload = f"127.0.0.1 & echo canary > {file_marker_path}"
+                marker_name = f"{canary_token.lower()}.txt"
+                file_marker_path = str(temp_dir / marker_name)
+                payload = f"127.0.0.1 & echo canary > {file_marker_path} & echo canary > {marker_name}"
             elif vuln_type == "SQL_INJECTION":
                 payload = f"' UNION SELECT 1, '{canary_token}', 'admin'--"
             elif vuln_type == "SSTI":
                 payload = "{{ 1337 * 7331 }}"
-                canary_token = "9799547"
+                canary_token = "9801547"
             else:
                 payload = canary_token
 

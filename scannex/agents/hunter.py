@@ -185,9 +185,9 @@ class HunterAgent(BaseAgent):
             temp_dir = Path(tempfile.gettempdir())
             marker_name = f"{canary_token.lower()}.txt"
             file_marker_path = str(temp_dir / marker_name)
-            payload = f"127.0.0.1 & echo canary > {file_marker_path}"
+            payload = f"127.0.0.1 & echo canary > {file_marker_path} & echo canary > {marker_name}"
         elif "SSTI" in vuln_type:
-            canary_token = "9799547"
+            canary_token = "9801547"
             payload = "{{ 1337 * 7331 }}"
         elif "SQL" in vuln_type:
             payload = f"' UNION SELECT 1, '{canary_token}', 'admin'--"

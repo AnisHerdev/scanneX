@@ -175,15 +175,15 @@ class BanditRunner:
             temp_dir = Path(tempfile.gettempdir())
             marker_name = f"{canary_token.lower()}.txt"
             file_marker_path = str(temp_dir / marker_name)
-            payload = f"127.0.0.1 & echo canary > {file_marker_path}"
+            payload = f"127.0.0.1 & echo canary > {file_marker_path} & echo canary > {marker_name}"
             if method == "POST" or param_source == "data":
                 data[param_name] = payload
             else:
                 params[param_name] = payload
 
         elif vuln_type == "SSTI":
-            # Dynamic template expression evaluation (1337 * 7331 = 9799547)
-            canary_token = "9799547"
+            # Dynamic template expression evaluation (1337 * 7331 = 9801547)
+            canary_token = "9801547"
             payload = "{{ 1337 * 7331 }}"
             if method == "POST" or param_source == "data":
                 data[param_name] = payload

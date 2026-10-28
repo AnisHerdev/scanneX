@@ -165,29 +165,29 @@ Full File Context:
 
     def _mock_response(self, system_prompt: str, user_prompt: str) -> str:
         """Deterministic mock response generating remediations for common vulnerabilities."""
-        if "cursor.execute(f\"SELECT * FROM users WHERE username = '{username}'\")" in user_prompt:
-            return json.dumps({
-                "search_block": "cursor.execute(f\"SELECT * FROM users WHERE username = '{username}'\")",
-                "replace_block": "cursor.execute(\"SELECT * FROM users WHERE username = %s\", (username,))",
-                "explanation": "Replaced dynamic query formatting with parameterized SQL placeholder."
-            })
-        elif "SQL_INJECTION" in user_prompt or "SELECT" in user_prompt:
-            return json.dumps({
-                "search_block": "query = f\"SELECT id, username, role FROM users WHERE username = '{username}'\"\n    cur.execute(query)",
-                "replace_block": "query = \"SELECT id, username, role FROM users WHERE username = ?\"\n    cur.execute(query, (username,))",
-                "explanation": "Replaced dynamic query formatting with parameterized SQLite placeholder (?)."
-            })
-        elif "COMMAND_INJECTION" in user_prompt or "os.system" in user_prompt:
+        if "Vulnerability: COMMAND_INJECTION" in user_prompt:
             return json.dumps({
                 "search_block": "os.system(cmd)",
                 "replace_block": "subprocess.run(['echo', 'pinging', target], check=True, capture_output=True)",
                 "explanation": "Replaced shell=True os.system call with argument list execution via subprocess.run."
             })
-        elif "SSTI" in user_prompt or "render_template_string" in user_prompt:
+        elif "Vulnerability: SSTI" in user_prompt:
             return json.dumps({
                 "search_block": "return render_template_string(template)",
                 "replace_block": "return render_template_string(\"Hello {{ name }}\", name=name)",
                 "explanation": "Passed variable to template context rather than formatting directly into template definition."
+            })
+        elif "Vulnerability: SQL_INJECTION" in user_prompt:
+            if "cursor.execute(f\"SELECT * FROM users WHERE username = '{username}'\")" in user_prompt:
+                return json.dumps({
+                    "search_block": "cursor.execute(f\"SELECT * FROM users WHERE username = '{username}'\")",
+                    "replace_block": "cursor.execute(\"SELECT * FROM users WHERE username = %s\", (username,))",
+                    "explanation": "Replaced dynamic query formatting with parameterized SQL placeholder."
+                })
+            return json.dumps({
+                "search_block": "query = f\"SELECT id, username, role FROM users WHERE username = '{username}'\"\n    cur.execute(query)",
+                "replace_block": "query = \"SELECT id, username, role FROM users WHERE username = ?\"\n    cur.execute(query, (username,))",
+                "explanation": "Replaced dynamic query formatting with parameterized SQLite placeholder (?)."
             })
 
         return json.dumps({

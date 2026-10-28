@@ -243,3 +243,5 @@ Full version with Docker-only enforced via the dashboard: check **Docker-only sa
 ## Team Gravitas (T2-13)
 - Built for HackFest 2026.
 - Architecture credit: Find-Prove-Fix pattern and Cloudflare finder/verifier inspiration.
+
+

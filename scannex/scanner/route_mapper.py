@@ -30,12 +30,34 @@ class RouteMapper:
         self.target_dir = Path(target_dir).resolve()
         self._routes_cache: dict[str, list[RouteContext]] = {}
 
+    def _resolve_file_path(self, file_path: Path | str) -> Optional[Path]:
+        """Resolve file path across various formats (absolute, relative to cwd, relative to target_dir)."""
+        p = Path(file_path)
+        if p.is_file():
+            return p.resolve()
+
+        cand = (self.target_dir / p).resolve()
+        if cand.is_file():
+            return cand
+
+        try:
+            rel = p.relative_to(self.target_dir.name)
+            cand = (self.target_dir / rel).resolve()
+            if cand.is_file():
+                return cand
+        except Exception:
+            pass
+
+        by_name = (self.target_dir / p.name).resolve()
+        if by_name.is_file():
+            return by_name
+
+        return None
+
     def scan_file(self, file_path: Path | str) -> list[RouteContext]:
         """Scan a single Python or PHP file for route definitions."""
-        path = Path(file_path)
-        if not path.is_absolute():
-            path = (self.target_dir / path).resolve()
-        if not path.is_file():
+        path = self._resolve_file_path(file_path)
+        if not path or not path.is_file():
             return []
 
         rel_path = str(path)
@@ -53,10 +75,7 @@ class RouteMapper:
 
     def find_route_for_line(self, file_path: Path | str, line_number: int) -> Optional[RouteContext]:
         """Find the HTTP route enclosing a given line of code."""
-        path = Path(file_path)
-        if not path.is_absolute():
-            path = (self.target_dir / path).resolve()
-        routes = self.scan_file(path)
+        routes = self.scan_file(file_path)
         for r in routes:
             if r.start_line <= line_number <= r.end_line:
                 return r

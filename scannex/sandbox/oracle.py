@@ -69,30 +69,25 @@ class DeterministicOracle:
                 mp = Path(marker_path)
                 marker_name = mp.name
                 
-                # Check exact path
-                if mp.exists():
-                    canary_tripped = True
-                    snippet = f"Planted canary file created: {mp}"
-                    try:
-                        mp.unlink()
-                    except Exception:
-                        pass
-                # Check relative to sandbox_dir
-                elif sandbox_dir and (sandbox_dir / marker_name).exists():
-                    canary_tripped = True
-                    snippet = f"Planted canary file created in sandbox: {marker_name}"
-                    try:
-                        (sandbox_dir / marker_name).unlink()
-                    except Exception:
-                        pass
-                # Check in system temp
-                elif (Path(tempfile.gettempdir()) / marker_name).exists():
-                    canary_tripped = True
-                    snippet = f"Planted canary file created in tempdir: {marker_name}"
-                    try:
-                        (Path(tempfile.gettempdir()) / marker_name).unlink()
-                    except Exception:
-                        pass
+                paths_to_check = [
+                    mp,
+                    (sandbox_dir / marker_name) if sandbox_dir else None,
+                    Path(tempfile.gettempdir()) / marker_name,
+                ]
+
+                for p in paths_to_check:
+                    if p and p.exists():
+                        canary_tripped = True
+                        snippet = f"Planted canary file created: {p}"
+                        break
+
+                # Clean up any created markers across all locations to avoid stale state in retests
+                for p in paths_to_check:
+                    if p and p.exists():
+                        try:
+                            p.unlink()
+                        except Exception:
+                            pass
 
         return ProbeResult(
             success=True,
