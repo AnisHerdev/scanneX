@@ -53,12 +53,13 @@ class SemgrepRunner:
             print("Execution Failure")
             return []
 
+        # Note: --metrics=off must NOT be passed with --config auto as Semgrep requires
+        # metrics to resolve the auto configuration fingerprint from its registry.
         cmd = [
             semgrep_bin,
             "scan",
             "--config",
             "auto",
-            "--metrics=off",
             "--disable-version-check",
             "--json",
             "-q",

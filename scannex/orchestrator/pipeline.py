@@ -106,13 +106,17 @@ class ScannexOrchestrator:
             
             bandit_findings = await loop.run_in_executor(None, self.bandit_runner.run)
             if isinstance(bandit_findings, str):
-                self._emit("STATIC_SCAN", f"Bandit execution warning: {bandit_findings}")
+                self._emit("STATIC_SCAN", f"Bandit: Execution Failure — did not run.")
                 bandit_findings = []
+            else:
+                self._emit("STATIC_SCAN", f"Bandit complete: {len(bandit_findings)} finding(s) identified.")
 
             semgrep_findings = await loop.run_in_executor(None, self.semgrep_runner.run)
             if isinstance(semgrep_findings, str):
-                self._emit("STATIC_SCAN", f"Semgrep execution warning: {semgrep_findings}")
+                self._emit("STATIC_SCAN", f"Semgrep: Execution Failure — did not run.")
                 semgrep_findings = []
+            else:
+                self._emit("STATIC_SCAN", f"Semgrep complete: {len(semgrep_findings)} finding(s) identified.")
 
             static_findings = bandit_findings + semgrep_findings
             self._emit(
