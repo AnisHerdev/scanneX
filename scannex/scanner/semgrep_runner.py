@@ -26,9 +26,18 @@ logger = logging.getLogger(__name__)
 class SemgrepRunner:
     """Executes Semgrep taint and SAST rules on target repositories."""
 
-    def __init__(self, target_dir: Path | str):
+    DEFAULT_CONFIGS = ["p/owasp-top-ten", "p/security-audit", "p/php"]
+
+    def __init__(
+        self,
+        target_dir: Path | str,
+        configs: Optional[list[str]] = None,
+        scan_workflows: bool = False,
+    ):
         self.target_dir = Path(target_dir).resolve()
         self.route_mapper = RouteMapper(self.target_dir)
+        self.configs = configs if configs is not None else list(self.DEFAULT_CONFIGS)
+        self.scan_workflows = scan_workflows
 
     def _is_docker_available(self) -> bool:
         """Check if Docker engine is running and accessible."""
@@ -69,6 +78,19 @@ class SemgrepRunner:
             logger.warning("Semgrep is not available via Docker or native CLI; skipping scan.")
             return []
 
+        # If no configs selected, skip Semgrep execution
+        active_configs = [c for c in self.configs if c]
+        if not active_configs:
+            return []
+
+        config_args: list[str] = []
+        for c in active_configs:
+            config_args.extend(["--config", c])
+
+        exclude_args: list[str] = []
+        if not self.scan_workflows:
+            exclude_args.extend(["--exclude", ".github"])
+
         if use_docker:
             # Mount target directory into container at /src
             target_str = str(self.target_dir)
@@ -81,10 +103,7 @@ class SemgrepRunner:
                 "semgrep/semgrep",
                 "semgrep",
                 "scan",
-                "--config",
-                "p/owasp-top-ten",
-                "--config",
-                "p/security-audit",
+            ] + config_args + exclude_args + [
                 "--json",
                 "-q",
                 "/src",
@@ -93,10 +112,7 @@ class SemgrepRunner:
             cmd = [
                 cli_bin,
                 "scan",
-                "--config",
-                "p/owasp-top-ten",
-                "--config",
-                "p/security-audit",
+            ] + config_args + exclude_args + [
                 "--json",
                 "-q",
                 str(self.target_dir),
@@ -237,13 +253,17 @@ class SemgrepRunner:
             vuln_type = "SSTI"
             cwe = "CWE-94"
             canary_type = CanaryType.REFLECTED
-        elif "xss" in full_context or "cross-site scripting" in full_context or cwe == "CWE-79":
+        elif "traversal" in full_context or "lfi" in full_context or "rfi" in full_context or "filename" in full_context or cwe in ("CWE-22", "CWE-98"):
+            vuln_type = "PATH_TRAVERSAL"
+            cwe = "CWE-22"
+            canary_type = CanaryType.REFLECTED
+        elif "xss" in full_context or "cross-site scripting" in full_context or "echoed-request" in full_context or cwe == "CWE-79":
             vuln_type = "XSS"
             cwe = "CWE-79"
             canary_type = CanaryType.REFLECTED
-        elif "traversal" in full_context or "lfi" in full_context or "rfi" in full_context or cwe in ("CWE-22", "CWE-98"):
-            vuln_type = "PATH_TRAVERSAL"
-            cwe = "CWE-22"
+        elif "phpinfo" in full_context or "info-leak" in full_context or cwe == "CWE-200":
+            vuln_type = "INFO_DISCLOSURE"
+            cwe = "CWE-200"
             canary_type = CanaryType.REFLECTED
         elif "csrf" in full_context or cwe == "CWE-352":
             vuln_type = "CSRF"
@@ -253,9 +273,9 @@ class SemgrepRunner:
             vuln_type = "INSECURE_DESERIALIZATION"
             cwe = "CWE-502"
             canary_type = CanaryType.FILE_MARKER
-        elif "github-action" in full_context or "mutable-action-tag" in full_context or "supply-chain" in full_context:
+        elif "github-action" in full_context or "mutable-action-tag" in full_context or "supply-chain" in full_context or cwe in ("CWE-1357", "CWE-1384"):
             vuln_type = "SUPPLY_CHAIN_RISK"
-            cwe = "CWE-1384"
+            cwe = "CWE-1357"
             canary_type = CanaryType.REFLECTED
         elif "crypto" in full_context or "hash" in full_context or cwe in ("CWE-327", "CWE-328"):
             vuln_type = "INSECURE_CRYPTO"

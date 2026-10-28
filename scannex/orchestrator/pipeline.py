@@ -60,7 +60,11 @@ class ScannexOrchestrator:
 
         # Scanners and agents
         self.bandit_runner = BanditRunner(self.target_dir)
-        self.semgrep_runner = SemgrepRunner(self.target_dir)
+        self.semgrep_runner = SemgrepRunner(
+            self.target_dir,
+            configs=getattr(self.config, "semgrep_configs", None),
+            scan_workflows=getattr(self.config, "scan_workflows", False),
+        )
         self.hunter_agent = HunterAgent(self.target_dir, self.config)
         self.verifier_agent = VerifierAgent(self.target_dir, self.config)
         self.patch_agent = SpeculativePatchAgent(self.target_dir, self.config)
@@ -89,13 +93,15 @@ class ScannexOrchestrator:
                 ".pytest_cache",
                 "site-packages",
             }
-            py_files = [
-                p for p in self.target_dir.rglob("*.py")
-                if not any(part in ignored_dirs or (part.startswith(".") and part != ".") for part in p.parts)
+            source_extensions = {".py", ".php", ".inc", ".js", ".ts", ".html", ".go", ".java", ".rb", ".cs"}
+            src_files = [
+                p for p in self.target_dir.rglob("*")
+                if p.is_file() and p.suffix.lower() in source_extensions
+                and not any(part in ignored_dirs or (part.startswith(".") and part != ".") for part in p.parts)
             ]
             self._emit(
                 "INIT",
-                f"Initializing ScanneX scan on {self.target_dir.name} ({len(py_files)} Python source files detected)",
+                f"Initializing ScanneX scan on {self.target_dir.name} ({len(src_files)} source files detected)",
             )
 
             # -------------------------------------------------------------
@@ -104,8 +110,16 @@ class ScannexOrchestrator:
             self._emit("STATIC_SCAN", "Executing static AST & taint rules (Bandit + Semgrep)...")
             loop = asyncio.get_running_loop()
             
-            bandit_findings = await loop.run_in_executor(None, self.bandit_runner.run)
-            semgrep_findings = await loop.run_in_executor(None, self.semgrep_runner.run)
+            static_tasks = []
+            if getattr(self.config, "enable_bandit", True):
+                static_tasks.append(loop.run_in_executor(None, self.bandit_runner.run))
+            else:
+                static_tasks.append(asyncio.sleep(0, result=[]))
+            
+            static_tasks.append(loop.run_in_executor(None, self.semgrep_runner.run))
+            results = await asyncio.gather(*static_tasks)
+            bandit_findings = results[0] or []
+            semgrep_findings = results[1] or []
             static_findings = bandit_findings + semgrep_findings
             self._emit("STATIC_SCAN", f"Static scan complete: {len(static_findings)} rule findings identified.")
 

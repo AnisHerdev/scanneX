@@ -30,6 +30,13 @@ class ScannexConfig(BaseModel):
     prefer_docker: bool = Field(default=True)
     docker_only: bool = Field(default=False)
     subprocess_port_range: tuple[int, int] = Field(default=(50000, 60000))
+
+    # Multi-language Semgrep rule configurations & linters
+    semgrep_configs: list[str] = Field(
+        default_factory=lambda: ["p/owasp-top-ten", "p/security-audit", "p/php"]
+    )
+    enable_bandit: bool = Field(default=True)
+    scan_workflows: bool = Field(default=False)
     
     @classmethod
     def from_env(cls) -> "ScannexConfig":

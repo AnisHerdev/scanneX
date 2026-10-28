@@ -1,6 +1,7 @@
 """Flask Web Server & REST API for the ScanneX Interactive Dashboard."""
 
 import asyncio
+import json
 import logging
 import os
 import shutil
@@ -31,7 +32,97 @@ app.jinja_env.auto_reload = True
 sessions: dict[str, dict[str, Any]] = {}
 
 
-def run_scan_async(session_id: str, target_dir: Path, mock_mode: bool, model_name: str, docker_only: bool = False) -> None:
+def parse_scanner_options(data_or_form: Any) -> tuple[list[str], bool, bool]:
+    """Extract checklist configurations for Semgrep and Bandit from request form or JSON."""
+    semgrep_configs = ["p/owasp-top-ten", "p/security-audit", "p/php"]
+    enable_bandit = True
+    scan_workflows = False
+
+    raw_configs = None
+    if hasattr(data_or_form, "getlist") and data_or_form.getlist("semgrep_configs"):
+        raw_list = data_or_form.getlist("semgrep_configs")
+        if len(raw_list) == 1 and raw_list[0].startswith("["):
+            try:
+                raw_configs = json.loads(raw_list[0])
+            except Exception:
+                raw_configs = [s.strip() for s in raw_list[0].split(",") if s.strip()]
+        else:
+            raw_configs = raw_list
+    elif isinstance(data_or_form, dict) and "semgrep_configs" in data_or_form:
+        val = data_or_form["semgrep_configs"]
+        if isinstance(val, list):
+            raw_configs = val
+        elif isinstance(val, str):
+            try:
+                raw_configs = json.loads(val)
+            except Exception:
+                raw_configs = [s.strip() for s in val.split(",") if s.strip()]
+    elif hasattr(data_or_form, "get") and data_or_form.get("semgrep_configs"):
+        val = data_or_form.get("semgrep_configs")
+        try:
+            raw_configs = json.loads(val)
+        except Exception:
+            raw_configs = [s.strip() for s in val.split(",") if s.strip()]
+
+    if raw_configs is not None:
+        semgrep_configs = [str(c) for c in raw_configs]
+
+    raw_bandit = None
+    if hasattr(data_or_form, "get"):
+        raw_bandit = data_or_form.get("enable_bandit")
+    elif isinstance(data_or_form, dict):
+        raw_bandit = data_or_form.get("enable_bandit")
+    if raw_bandit is not None:
+        enable_bandit = str(raw_bandit).lower() in ("true", "1", "yes")
+
+    raw_workflows = None
+    if hasattr(data_or_form, "get"):
+        raw_workflows = data_or_form.get("scan_workflows")
+    elif isinstance(data_or_form, dict):
+        raw_workflows = data_or_form.get("scan_workflows")
+    if raw_workflows is not None:
+        scan_workflows = str(raw_workflows).lower() in ("true", "1", "yes")
+
+    return semgrep_configs, enable_bandit, scan_workflows
+
+
+def get_source_summary(target_dir: Path) -> tuple[int, str]:
+    """Count source files across supported languages and provide a human summary."""
+    src_exts = {".py", ".php", ".js", ".jsx", ".ts", ".tsx", ".go", ".java", ".rb", ".c", ".cpp"}
+    files = [p for p in target_dir.rglob("*") if p.is_file() and p.suffix.lower() in src_exts]
+    total = len(files)
+    if total == 0:
+        return 0, "0 source files"
+
+    php_count = sum(1 for p in files if p.suffix.lower() == ".php")
+    py_count = sum(1 for p in files if p.suffix.lower() == ".py")
+    js_count = sum(1 for p in files if p.suffix.lower() in {".js", ".jsx", ".ts", ".tsx"})
+
+    parts = []
+    if php_count:
+        parts.append(f"{php_count} PHP")
+    if py_count:
+        parts.append(f"{py_count} Python")
+    if js_count:
+        parts.append(f"{js_count} JS/TS")
+    other = total - php_count - py_count - js_count
+    if other > 0:
+        parts.append(f"{other} other")
+
+    summary = f"{total} source files ({', '.join(parts)})" if parts else f"{total} source files"
+    return total, summary
+
+
+def run_scan_async(
+    session_id: str,
+    target_dir: Path,
+    mock_mode: bool,
+    model_name: str,
+    docker_only: bool = False,
+    semgrep_configs: list[str] | None = None,
+    enable_bandit: bool = True,
+    scan_workflows: bool = False,
+) -> None:
     """Run ScanneX orchestrator in a background thread."""
     session = sessions[session_id]
     session["status"] = "running"
@@ -73,6 +164,10 @@ def run_scan_async(session_id: str, target_dir: Path, mock_mode: bool, model_nam
         config.docker_only = docker_only
         if model_name:
             config.model_name = model_name
+        if semgrep_configs is not None:
+            config.semgrep_configs = semgrep_configs
+        config.enable_bandit = enable_bandit
+        config.scan_workflows = scan_workflows
         
         # Dedicated SQLite store for this session
         session_db = target_dir / ".scannex_session.db"
@@ -197,6 +292,7 @@ def upload_scan():
     mock_mode = request.form.get("mock", "false").lower() in ("true", "1", "yes")
     model_name = request.form.get("model", "ollama/llama3.2:1b")
     docker_only = request.form.get("docker_only", "false").lower() in ("true", "1", "yes")
+    semgrep_configs, enable_bandit, scan_workflows = parse_scanner_options(request.form)
 
     session_id = str(uuid.uuid4())
     temp_dir = Path(tempfile.mkdtemp(prefix=f"scannex_upload_{session_id[:8]}_"))
@@ -210,9 +306,9 @@ def upload_scan():
         extract_dir.mkdir(parents=True, exist_ok=True)
 
         final_dir = extract_zip_archive(zip_path, extract_dir)
-        py_count = len(list(final_dir.rglob("*.py")))
+        total_src, src_summary = get_source_summary(final_dir)
 
-        print(f"[ScanneX Upload] Extracted '{uploaded_file.filename}' -> Root: {final_dir.name} ({py_count} Python files identified)")
+        print(f"[ScanneX Upload] Extracted '{uploaded_file.filename}' -> Root: {final_dir.name} ({src_summary})")
 
         sessions[session_id] = {
             "id": session_id,
@@ -223,7 +319,7 @@ def upload_scan():
             "events": [
                 {
                     "stage": "EXTRACT",
-                    "message": f"Successfully unpacked '{uploaded_file.filename}' -> codebase root '{final_dir.name}' ({py_count} Python source files detected)",
+                    "message": f"Successfully unpacked '{uploaded_file.filename}' -> codebase root '{final_dir.name}' ({src_summary})",
                     "vuln_type": None,
                     "title": None,
                     "status": None,
@@ -234,7 +330,7 @@ def upload_scan():
 
         thread = threading.Thread(
             target=run_scan_async,
-            args=(session_id, final_dir, mock_mode, model_name, docker_only),
+            args=(session_id, final_dir, mock_mode, model_name, docker_only, semgrep_configs, enable_bandit, scan_workflows),
             daemon=True,
         )
         thread.start()
@@ -260,6 +356,7 @@ def github_scan():
     mock_mode = str(data.get("mock", "false")).lower() in ("true", "1", "yes")
     model_name = data.get("model", "ollama/llama3.2:1b")
     docker_only = str(data.get("docker_only", "false")).lower() in ("true", "1", "yes")
+    semgrep_configs, enable_bandit, scan_workflows = parse_scanner_options(data)
 
     session_id = str(uuid.uuid4())
     temp_dir = Path(tempfile.mkdtemp(prefix=f"scannex_git_{session_id[:8]}_"))
@@ -274,8 +371,8 @@ def github_scan():
             return jsonify({"error": f"Git clone failed: {res.stderr}"}), 400
 
         repo_name = repo_url.rstrip("/").split("/")[-1].replace(".git", "")
-        py_count = len(list(clone_dir.rglob("*.py")))
-        print(f"[ScanneX Git] Cloned {repo_name} ({py_count} Python files identified)")
+        total_src, src_summary = get_source_summary(clone_dir)
+        print(f"[ScanneX Git] Cloned {repo_name} ({src_summary})")
 
         sessions[session_id] = {
             "id": session_id,
@@ -286,7 +383,7 @@ def github_scan():
             "events": [
                 {
                     "stage": "GIT_CLONE",
-                    "message": f"Successfully cloned {repo_url} ({py_count} Python source files detected)",
+                    "message": f"Successfully cloned {repo_url} ({src_summary})",
                     "vuln_type": None,
                     "title": None,
                     "status": None,
@@ -297,7 +394,7 @@ def github_scan():
 
         thread = threading.Thread(
             target=run_scan_async,
-            args=(session_id, clone_dir, mock_mode, model_name, docker_only),
+            args=(session_id, clone_dir, mock_mode, model_name, docker_only, semgrep_configs, enable_bandit, scan_workflows),
             daemon=True,
         )
         thread.start()
@@ -319,12 +416,13 @@ def demo_scan():
     mock_mode = str(data.get("mock", "false")).lower() in ("true", "1", "yes")
     model_name = data.get("model", "ollama/llama3.2:1b")
     docker_only = str(data.get("docker_only", "false")).lower() in ("true", "1", "yes")
+    semgrep_configs, enable_bandit, scan_workflows = parse_scanner_options(data)
 
     temp_dir = Path(tempfile.mkdtemp(prefix="scannex_demo_"))
     shutil.copytree(benchmark_dir, temp_dir, dirs_exist_ok=True)
-    py_count = len(list(temp_dir.rglob("*.py")))
+    total_src, src_summary = get_source_summary(temp_dir)
 
-    print(f"\n[ScanneX Demo] Launching benchmark scan ({py_count} Python files)")
+    print(f"\n[ScanneX Demo] Launching benchmark scan ({src_summary})")
 
     sessions[session_id] = {
         "id": session_id,
@@ -335,7 +433,7 @@ def demo_scan():
         "events": [
             {
                 "stage": "DEMO_INIT",
-                "message": f"Initialized benchmark vulnerable app sandbox target ({py_count} Python source files)",
+                "message": f"Initialized benchmark vulnerable app sandbox target ({src_summary})",
                 "vuln_type": None,
                 "title": None,
                 "status": None,
@@ -346,7 +444,7 @@ def demo_scan():
 
     thread = threading.Thread(
         target=run_scan_async,
-        args=(session_id, temp_dir, mock_mode, model_name, docker_only),
+        args=(session_id, temp_dir, mock_mode, model_name, docker_only, semgrep_configs, enable_bandit, scan_workflows),
         daemon=True,
     )
     thread.start()

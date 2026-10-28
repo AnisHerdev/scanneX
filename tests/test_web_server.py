@@ -84,7 +84,7 @@ def test_upload_and_scan_vulnerable_zip_with_pycache(client):
 
     # Poll status until completed or timed out
     completed = False
-    for _ in range(40):
+    for _ in range(50):
         time.sleep(1)
         status_res = client.get(f"/api/scan/{session_id}/status")
         data = status_res.get_json()
@@ -107,3 +107,58 @@ def test_list_ollama_models(client):
     assert "available" in data
     assert "models" in data
     assert isinstance(data["models"], list)
+
+
+def test_index_contains_checklist_options(client):
+    """Ensure the dashboard HTML includes manual checklist options for static analyzers."""
+    res = client.get("/")
+    assert res.status_code == 200
+    html = res.data.decode("utf-8")
+    assert "Static Analyzers &amp; Rule Packs" in html or "Static Analyzers & Rule Packs" in html
+    assert "rule-owasp" in html
+    assert "rule-php" in html
+    assert "rule-security-audit" in html
+    assert "rule-bandit" in html
+    assert "rule-workflows" in html
+
+
+def test_demo_scan_with_custom_rule_checklist(client):
+    """Ensure demo endpoint accepts customized semgrep_configs and scanner flags."""
+    res = client.post(
+        "/api/scan/demo",
+        json={
+            "mock": True,
+            "semgrep_configs": ["p/php", "p/owasp-top-ten"],
+            "enable_bandit": False,
+            "scan_workflows": True,
+        },
+    )
+    assert res.status_code == 200
+    data = res.get_json()
+    assert "session_id" in data
+    assert data["status"] == "queued"
+
+
+def test_upload_with_custom_rule_checklist(client):
+    """Ensure upload endpoint parses semgrep_configs and flags from multipart form data."""
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as z:
+        z.writestr("index.php", "<?php echo $_GET['user']; ?>")
+    zip_buffer.seek(0)
+
+    res = client.post(
+        "/api/scan/upload",
+        data={
+            "file": (zip_buffer, "php_sample.zip"),
+            "mock": "true",
+            "semgrep_configs": '["p/php", "p/owasp-top-ten"]',
+            "enable_bandit": "false",
+            "scan_workflows": "false",
+        },
+        content_type="multipart/form-data",
+    )
+    assert res.status_code == 200
+    data = res.get_json()
+    assert "session_id" in data
+    assert data["status"] == "queued"
+

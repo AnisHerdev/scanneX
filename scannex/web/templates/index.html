@@ -640,6 +640,116 @@
       box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
+    /* Scanner & Rule Pack Checklist */
+    .rules-panel {
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .rules-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .rules-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rules-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .rules-header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    .rules-quick-btn {
+      background: none;
+      border: none;
+      color: var(--accent-primary);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .rules-quick-btn:hover {
+      color: var(--accent-primary-hover);
+    }
+
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 8px;
+    }
+
+    .rule-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 140ms ease, background-color 140ms ease;
+    }
+
+    .rule-card:hover {
+      border-color: var(--border-strong);
+      background-color: var(--bg-surface-hover);
+    }
+
+    .rule-card.active {
+      border-color: rgba(35, 134, 54, 0.4);
+    }
+
+    .rule-cb {
+      accent-color: var(--accent-primary);
+      width: 14px;
+      height: 14px;
+      margin-top: 2px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .rule-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      line-height: 1.3;
+    }
+
+    .rule-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .rule-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
     /* Live Progress & Status Panel */
     .scan-status-panel {
       display: none;
@@ -1288,6 +1398,73 @@
           <span id="text-demo-scan">Run Benchmark CVE Demo</span>
         </button>
       </div>
+
+      <!-- Scanner & Rule Pack Checklist -->
+      <div class="rules-panel" id="rules-panel">
+        <div class="rules-header">
+          <div class="rules-header-left">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-primary);">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <span class="rules-title">Static Analyzers &amp; Rule Packs</span>
+            <span class="badge" id="rules-count-badge" style="background: var(--bg-surface-elevated); color: var(--accent-primary); border: 1px solid var(--border-strong); font-size: 11px; padding: 1px 7px;">4 active</span>
+          </div>
+          <div class="rules-header-right">
+            <button type="button" class="rules-quick-btn" onclick="setRulesSelection('all')">Select All</button>
+            <span style="color: var(--border-strong);">|</span>
+            <button type="button" class="rules-quick-btn" onclick="setRulesSelection('default')">Defaults</button>
+            <span style="color: var(--border-strong);">|</span>
+            <button type="button" class="rules-quick-btn" onclick="setRulesSelection('none')">Clear</button>
+          </div>
+        </div>
+
+        <div class="rules-grid">
+          <!-- OWASP Top 10 -->
+          <label class="rule-card" id="card-owasp">
+            <input type="checkbox" id="rule-owasp" class="rule-cb" checked onchange="handleRulesChange()" />
+            <div class="rule-info">
+              <div class="rule-name">OWASP Top 10</div>
+              <div class="rule-desc">Multi-language injection &amp; taint rules (PHP, JS, Python, Go, Java)</div>
+            </div>
+          </label>
+
+          <!-- PHP Security Suite -->
+          <label class="rule-card" id="card-php">
+            <input type="checkbox" id="rule-php" class="rule-cb" checked onchange="handleRulesChange()" />
+            <div class="rule-info">
+              <div class="rule-name">PHP Security Suite</div>
+              <div class="rule-desc">PHP sinks: SQLi, command exec, LFI/RFI, and XSS</div>
+            </div>
+          </label>
+
+          <!-- Comprehensive Security Audit -->
+          <label class="rule-card" id="card-security-audit">
+            <input type="checkbox" id="rule-security-audit" class="rule-cb" checked onchange="handleRulesChange()" />
+            <div class="rule-info">
+              <div class="rule-name">Security Audit (Semgrep)</div>
+              <div class="rule-desc">Comprehensive SAST taint analysis, sinks &amp; cryptographic flaws</div>
+            </div>
+          </label>
+
+          <!-- Bandit Python AST -->
+          <label class="rule-card" id="card-bandit">
+            <input type="checkbox" id="rule-bandit" class="rule-cb" checked onchange="handleRulesChange()" />
+            <div class="rule-info">
+              <div class="rule-name">Bandit AST Linter</div>
+              <div class="rule-desc">Python-specific AST security checks (B101-B703, eval, asserts)</div>
+            </div>
+          </label>
+
+          <!-- CI/CD & Workflows -->
+          <label class="rule-card" id="card-workflows">
+            <input type="checkbox" id="rule-workflows" class="rule-cb" onchange="handleRulesChange()" />
+            <div class="rule-info">
+              <div class="rule-name">CI/CD &amp; Supply Chain</div>
+              <div class="rule-desc">GitHub Actions workflow security, untrusted inputs &amp; script tags</div>
+            </div>
+          </label>
+        </div>
+      </div>
     </div>
 
     <!-- Live Scan Status & Activity Feed -->
@@ -1441,6 +1618,7 @@
       const dockerOnly = localStorage.getItem('scannex-docker-only') === '1';
       document.getElementById('docker-only-checkbox').checked = dockerOnly;
       updateDockerOnlyLabel(dockerOnly);
+      loadRulesSelection();
     });
 
     // 3-Way LLM Mode Toggle
@@ -1596,19 +1774,142 @@
       }
     }
 
+    // Rule Packs & Analyzers Checklist
+    function updateRulesCount() {
+      const items = [
+        { id: 'rule-owasp', card: 'card-owasp' },
+        { id: 'rule-php', card: 'card-php' },
+        { id: 'rule-security-audit', card: 'card-security-audit' },
+        { id: 'rule-bandit', card: 'card-bandit' },
+        { id: 'rule-workflows', card: 'card-workflows' },
+      ];
+      let active = 0;
+      items.forEach(item => {
+        const el = document.getElementById(item.id);
+        const card = document.getElementById(item.card);
+        if (el && el.checked) {
+          active++;
+          if (card) card.classList.add('active');
+        } else if (card) {
+          card.classList.remove('active');
+        }
+      });
+      const badge = document.getElementById('rules-count-badge');
+      if (badge) {
+        badge.innerText = `${active} active`;
+      }
+    }
+
+    function handleRulesChange() {
+      updateRulesCount();
+      saveRulesSelection();
+    }
+
+    function setRulesSelection(mode) {
+      const owasp = document.getElementById('rule-owasp');
+      const php = document.getElementById('rule-php');
+      const sec = document.getElementById('rule-security-audit');
+      const bandit = document.getElementById('rule-bandit');
+      const workflows = document.getElementById('rule-workflows');
+
+      if (mode === 'all') {
+        if (owasp) owasp.checked = true;
+        if (php) php.checked = true;
+        if (sec) sec.checked = true;
+        if (bandit) bandit.checked = true;
+        if (workflows) workflows.checked = true;
+      } else if (mode === 'none') {
+        if (owasp) owasp.checked = false;
+        if (php) php.checked = false;
+        if (sec) sec.checked = false;
+        if (bandit) bandit.checked = false;
+        if (workflows) workflows.checked = false;
+      } else if (mode === 'default') {
+        if (owasp) owasp.checked = true;
+        if (php) php.checked = true;
+        if (sec) sec.checked = true;
+        if (bandit) bandit.checked = true;
+        if (workflows) workflows.checked = false;
+      }
+      updateRulesCount();
+      saveRulesSelection();
+    }
+
+    function saveRulesSelection() {
+      const prefs = {
+        owasp: document.getElementById('rule-owasp')?.checked ?? true,
+        php: document.getElementById('rule-php')?.checked ?? true,
+        sec: document.getElementById('rule-security-audit')?.checked ?? true,
+        bandit: document.getElementById('rule-bandit')?.checked ?? true,
+        workflows: document.getElementById('rule-workflows')?.checked ?? false,
+      };
+      try {
+        localStorage.setItem('scannex-rules-prefs', JSON.stringify(prefs));
+      } catch (e) {}
+    }
+
+    function loadRulesSelection() {
+      try {
+        const raw = localStorage.getItem('scannex-rules-prefs');
+        if (raw) {
+          const prefs = JSON.parse(raw);
+          if (document.getElementById('rule-owasp') && typeof prefs.owasp === 'boolean') {
+            document.getElementById('rule-owasp').checked = prefs.owasp;
+          }
+          if (document.getElementById('rule-php') && typeof prefs.php === 'boolean') {
+            document.getElementById('rule-php').checked = prefs.php;
+          }
+          if (document.getElementById('rule-security-audit') && typeof prefs.sec === 'boolean') {
+            document.getElementById('rule-security-audit').checked = prefs.sec;
+          }
+          if (document.getElementById('rule-bandit') && typeof prefs.bandit === 'boolean') {
+            document.getElementById('rule-bandit').checked = prefs.bandit;
+          }
+          if (document.getElementById('rule-workflows') && typeof prefs.workflows === 'boolean') {
+            document.getElementById('rule-workflows').checked = prefs.workflows;
+          }
+        }
+      } catch (e) {}
+      updateRulesCount();
+    }
+
     function getEngineConfig() {
       const dockerOnly = document.getElementById('docker-only-checkbox').checked;
+
+      // Extract active Semgrep rule packs
+      const semgrepConfigs = [];
+      if (document.getElementById('rule-owasp')?.checked) {
+        semgrepConfigs.push('p/owasp-top-ten');
+      }
+      if (document.getElementById('rule-php')?.checked) {
+        semgrepConfigs.push('p/php');
+      }
+      if (document.getElementById('rule-security-audit')?.checked) {
+        semgrepConfigs.push('p/security-audit');
+      }
+
+      const enableBandit = document.getElementById('rule-bandit')?.checked ?? true;
+      const scanWorkflows = document.getElementById('rule-workflows')?.checked ?? false;
+
+      let baseConfig;
       if (currentLLMMode === 'mock') {
-        return { mock: true, model: 'ollama/llama3.2:1b', docker_only: dockerOnly };
+        baseConfig = { mock: true, model: 'ollama/llama3.2:1b', docker_only: dockerOnly };
       } else if (currentLLMMode === 'gemini') {
-        return { mock: false, model: 'gemini/gemini-2.5-flash', docker_only: dockerOnly };
+        baseConfig = { mock: false, model: 'gemini/gemini-2.5-flash', docker_only: dockerOnly };
       } else {
         // Ollama: use selected model from picker
         const select = document.getElementById('ollama-model-select');
         const model = select && select.value && !select.options[select.selectedIndex]?.disabled
           ? select.value : 'ollama/llama3.2:1b';
-        return { mock: false, model, docker_only: dockerOnly };
+        baseConfig = { mock: false, model, docker_only: dockerOnly };
       }
+
+      return {
+        ...baseConfig,
+        semgrep_configs: semgrepConfigs,
+        enable_bandit: enableBandit,
+        scan_workflows: scanWorkflows,
+      };
     }
 
     function uploadFile(file) {
@@ -1624,6 +1925,9 @@
       formData.append('mock', config.mock ? 'true' : 'false');
       formData.append('model', config.model);
       formData.append('docker_only', config.docker_only ? 'true' : 'false');
+      formData.append('semgrep_configs', JSON.stringify(config.semgrep_configs));
+      formData.append('enable_bandit', config.enable_bandit ? 'true' : 'false');
+      formData.append('scan_workflows', config.scan_workflows ? 'true' : 'false');
 
       fetch('/api/scan/upload', { method: 'POST', body: formData })
         .then(res => res.json())
@@ -1661,7 +1965,15 @@
       fetch('/api/scan/github', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url, mock: config.mock, model: config.model, docker_only: config.docker_only })
+        body: JSON.stringify({
+          url: url,
+          mock: config.mock,
+          model: config.model,
+          docker_only: config.docker_only,
+          semgrep_configs: config.semgrep_configs,
+          enable_bandit: config.enable_bandit,
+          scan_workflows: config.scan_workflows,
+        })
       })
       .then(res => res.json())
       .then(data => {
@@ -1691,7 +2003,14 @@
       fetch('/api/scan/demo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mock: config.mock, model: config.model, docker_only: config.docker_only })
+        body: JSON.stringify({
+          mock: config.mock,
+          model: config.model,
+          docker_only: config.docker_only,
+          semgrep_configs: config.semgrep_configs,
+          enable_bandit: config.enable_bandit,
+          scan_workflows: config.scan_workflows,
+        })
       })
       .then(res => res.json())
       .then(data => {
