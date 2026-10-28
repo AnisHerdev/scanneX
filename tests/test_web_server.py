@@ -3,6 +3,7 @@
 import io
 import time
 import zipfile
+from pathlib import Path
 import pytest
 from scannex.web.server import app
 
@@ -60,6 +61,43 @@ def test_upload_valid_zip(client):
     assert res.status_code == 200
     data = res.get_json()
     assert "session_id" in data
+
+
+def test_upload_and_scan_vulnerable_zip_with_pycache(client):
+    """Ensure a zip archive with flat files and __pycache__ properly discovers vulnerabilities and events."""
+    bench_app = Path("scannex/benchmark/vulnerable_flask_app/app.py")
+    assert bench_app.is_file()
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as z:
+        z.write(bench_app, "app.py")
+        z.writestr("__pycache__/app.cpython-311.pyc", "mock-bytecode")
+    zip_buffer.seek(0)
+
+    res = client.post(
+        "/api/scan/upload",
+        data={"file": (zip_buffer, "vuln_with_cache.zip"), "mock": "true"},
+        content_type="multipart/form-data",
+    )
+    assert res.status_code == 200
+    session_id = res.get_json()["session_id"]
+
+    # Poll status until completed or timed out
+    completed = False
+    for _ in range(15):
+        time.sleep(1)
+        status_res = client.get(f"/api/scan/{session_id}/status")
+        data = status_res.get_json()
+        if data["status"] in ("completed", "failed"):
+            completed = True
+            assert data["status"] == "completed"
+            assert len(data["findings"]) > 0
+            # Ensure EXTRACT event is in events
+            stages = [ev["stage"] for ev in data["events"]]
+            assert "EXTRACT" in stages
+            assert "INIT" in stages
+            break
+    assert completed, "Scan session did not complete in time"
 
 
 def test_list_ollama_models(client):

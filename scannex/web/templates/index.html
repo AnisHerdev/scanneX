@@ -820,6 +820,16 @@
       font-weight: 600;
     }
 
+    .event-error {
+      color: #f85149;
+      font-weight: 600;
+    }
+
+    .event-extract {
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
     /* Metrics Summary Cards */
     .metrics-bar {
       display: grid;
@@ -1580,7 +1590,9 @@
 
     function handleFileSelect(e) {
       if (e.target.files.length > 0) {
-        uploadFile(e.target.files[0]);
+        const file = e.target.files[0];
+        e.target.value = '';
+        uploadFile(file);
       }
     }
 
@@ -1799,6 +1811,8 @@
               let cls = 'event-entry';
               if (ev.stage.includes('CONFIRMED')) cls += ' event-canary';
               if (ev.stage.includes('FIX_VERIFIED')) cls += ' event-fixed';
+              if (ev.stage.includes('FAILED') || ev.stage.includes('ERROR')) cls += ' event-error';
+              if (ev.stage.includes('EXTRACT')) cls += ' event-extract';
               return `<div class="${cls}"><span class="event-stage">[${escapeHtml(ev.stage)}]</span> ${escapeHtml(ev.message)}</div>`;
             }).join('');
             log.scrollTop = log.scrollHeight;

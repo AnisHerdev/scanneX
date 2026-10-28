@@ -1,6 +1,9 @@
 """Core ScanneX Orchestration Pipeline with Concurrent Speculative Patching."""
 
 import asyncio
+import shutil
+import tempfile
+import zipfile
 from pathlib import Path
 from typing import Callable, Optional
 from scannex.agents.hunter import HunterAgent
@@ -10,6 +13,7 @@ from scannex.config import ScannexConfig
 from scannex.db.models import Finding, FindingStatus
 from scannex.db.store import FindingsStore
 from scannex.sandbox.executor import SandboxExecutor
+from scannex.scanner.archive_extractor import extract_zip_archive
 from scannex.scanner.bandit_runner import BanditRunner
 from scannex.scanner.semgrep_runner import SemgrepRunner
 
@@ -39,7 +43,17 @@ class ScannexOrchestrator:
         store: Optional[FindingsStore] = None,
         event_callback: Optional[Callable[[PipelineEvent], None]] = None,
     ):
-        self.target_dir = Path(target_dir).resolve()
+        target_path = Path(target_dir).resolve()
+        self.cleanup_temp_dir: Optional[Path] = None
+
+        # Automatically unpack if target is a ZIP file
+        if target_path.is_file() and (target_path.suffix.lower() == ".zip" or zipfile.is_zipfile(target_path)):
+            temp_extract = Path(tempfile.mkdtemp(prefix="scannex_zip_"))
+            self.cleanup_temp_dir = temp_extract
+            self.target_dir = extract_zip_archive(target_path, temp_extract)
+        else:
+            self.target_dir = target_path
+
         self.config = config or ScannexConfig.from_env()
         self.store = store or FindingsStore(self.config.db_path)
         self.event_callback = event_callback or (lambda ev: None)
@@ -63,56 +77,79 @@ class ScannexOrchestrator:
 
     async def run(self) -> list[Finding]:
         """Execute the end-to-end autonomous AppSec pipeline."""
-        self._emit("INIT", f"Initializing ScanneX scan on {self.target_dir.name}")
+        try:
+            ignored_dirs = {
+                "__pycache__",
+                ".venv",
+                "venv",
+                "env",
+                ".env",
+                "node_modules",
+                ".git",
+                ".pytest_cache",
+                "site-packages",
+            }
+            py_files = [
+                p for p in self.target_dir.rglob("*.py")
+                if not any(part in ignored_dirs or (part.startswith(".") and part != ".") for part in p.parts)
+            ]
+            self._emit(
+                "INIT",
+                f"Initializing ScanneX scan on {self.target_dir.name} ({len(py_files)} Python source files detected)",
+            )
 
-        # -------------------------------------------------------------
-        # Track 1: Deterministic Static Scanning (Preserved Intact)
-        # -------------------------------------------------------------
-        self._emit("STATIC_SCAN", "Executing static AST & taint rules (Bandit + Semgrep)...")
-        loop = asyncio.get_running_loop()
-        
-        bandit_findings = await loop.run_in_executor(None, self.bandit_runner.run)
-        semgrep_findings = await loop.run_in_executor(None, self.semgrep_runner.run)
-        static_findings = bandit_findings + semgrep_findings
-        self._emit("STATIC_SCAN", f"Static scan complete: {len(static_findings)} rule findings identified.")
+            # -------------------------------------------------------------
+            # Track 1: Deterministic Static Scanning (Preserved Intact)
+            # -------------------------------------------------------------
+            self._emit("STATIC_SCAN", "Executing static AST & taint rules (Bandit + Semgrep)...")
+            loop = asyncio.get_running_loop()
+            
+            bandit_findings = await loop.run_in_executor(None, self.bandit_runner.run)
+            semgrep_findings = await loop.run_in_executor(None, self.semgrep_runner.run)
+            static_findings = bandit_findings + semgrep_findings
+            self._emit("STATIC_SCAN", f"Static scan complete: {len(static_findings)} rule findings identified.")
 
-        # -------------------------------------------------------------
-        # Track 2: AI Hunter + Immediate Adversarial Verifier
-        # -------------------------------------------------------------
-        self._emit("AI_HUNT", "AI Hunter analyzing business logic, auth flows, and unexpressed taint...")
-        raw_ai_findings = await self.hunter_agent.hunt()
-        self._emit("AI_HUNT", f"AI Hunter identified {len(raw_ai_findings)} candidate logic hypotheses.")
+            # -------------------------------------------------------------
+            # Track 2: AI Hunter + Immediate Adversarial Verifier
+            # -------------------------------------------------------------
+            self._emit("AI_HUNT", "AI Hunter analyzing business logic, auth flows, and unexpressed taint...")
+            raw_ai_findings = await self.hunter_agent.hunt()
+            self._emit("AI_HUNT", f"AI Hunter identified {len(raw_ai_findings)} candidate logic hypotheses.")
 
-        approved_ai_findings: list[Finding] = []
-        for candidate in raw_ai_findings:
-            self._emit("ADVERSARIAL_VERIFY", f"Adversarial Verifier auditing hypothesis: {candidate.title}", candidate)
-            verification = await self.verifier_agent.verify(candidate)
-            if verification.up_approved:
-                approved_ai_findings.append(candidate)
-                self._emit("ADVERSARIAL_VERIFY", f"Hypothesis UP-APPROVED: {candidate.title}", candidate)
-            else:
-                self.store.save_finding(candidate)
-                self._emit("ADVERSARIAL_VERIFY", f"Hypothesis REJECTED (disproved): {candidate.title}", candidate)
+            approved_ai_findings: list[Finding] = []
+            for candidate in raw_ai_findings:
+                self._emit("ADVERSARIAL_VERIFY", f"Adversarial Verifier auditing hypothesis: {candidate.title}", candidate)
+                verification = await self.verifier_agent.verify(candidate)
+                if verification.up_approved:
+                    approved_ai_findings.append(candidate)
+                    self._emit("ADVERSARIAL_VERIFY", f"Hypothesis UP-APPROVED: {candidate.title}", candidate)
+                else:
+                    self.store.save_finding(candidate)
+                    self._emit("ADVERSARIAL_VERIFY", f"Hypothesis REJECTED (disproved): {candidate.title}", candidate)
 
-        # -------------------------------------------------------------
-        # Consolidation & Early Exit Check
-        # -------------------------------------------------------------
-        all_candidates = static_findings + approved_ai_findings
-        self._emit("CONSOLIDATE", f"Consolidated {len(all_candidates)} actionable findings.")
+            # -------------------------------------------------------------
+            # Consolidation & Early Exit Check
+            # -------------------------------------------------------------
+            all_candidates = static_findings + approved_ai_findings
+            self._emit("CONSOLIDATE", f"Consolidated {len(all_candidates)} actionable findings.")
 
-        if not all_candidates:
-            self._emit("COMPLETE", "Zero vulnerabilities detected. Repository is secure!")
-            return []
+            if not all_candidates:
+                self._emit("COMPLETE", "Zero vulnerabilities detected. Repository is secure!")
+                return []
 
-        # -------------------------------------------------------------
-        # Concurrent Speculative Patching & Dynamic Sandbox Proving
-        # -------------------------------------------------------------
-        semaphore = asyncio.Semaphore(self.config.max_concurrency)
-        tasks = [self._process_finding(f, semaphore) for f in all_candidates]
-        completed_findings = await asyncio.gather(*tasks)
+            # -------------------------------------------------------------
+            # Concurrent Speculative Patching & Dynamic Sandbox Proving
+            # -------------------------------------------------------------
+            semaphore = asyncio.Semaphore(self.config.max_concurrency)
+            tasks = [self._process_finding(f, semaphore) for f in all_candidates]
+            completed_findings = await asyncio.gather(*tasks)
 
-        self._emit("COMPLETE", f"Pipeline finished: {len(completed_findings)} findings verified and stored.")
-        return completed_findings
+            self._emit("COMPLETE", f"Pipeline finished: {len(completed_findings)} findings verified and stored.")
+            return completed_findings
+
+        finally:
+            if self.cleanup_temp_dir and self.cleanup_temp_dir.exists():
+                shutil.rmtree(self.cleanup_temp_dir, ignore_errors=True)
 
     async def _process_finding(self, finding: Finding, semaphore: asyncio.Semaphore) -> Finding:
         """Concurrently run Sandbox Prover and Speculative Patch Agent."""

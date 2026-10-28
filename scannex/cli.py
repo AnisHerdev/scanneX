@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import sys
 import threading
+import zipfile
 
 # Ensure UTF-8 output on Windows consoles
 if hasattr(sys.stdout, "reconfigure"):
@@ -51,7 +52,11 @@ def scan(target, mock, dockeronly, model, sarif, markdown, html, db, concurrency
     ui.print_banner()
 
     target_path = Path(target).resolve()
-    console.print(f"[bold cyan]Scanning target:[/bold cyan] {target_path}\n")
+    if target_path.is_file() and (target_path.suffix.lower() == ".zip" or zipfile.is_zipfile(target_path)):
+        console.print(f"[bold cyan]Scanning ZIP archive target:[/bold cyan] {target_path}")
+        console.print(f"[dim]ScanneX will safely unpack and inspect the archive codebase.[/dim]\n")
+    else:
+        console.print(f"[bold cyan]Scanning target directory:[/bold cyan] {target_path}\n")
 
     config = ScannexConfig.from_env()
     config.mock_mode = mock
@@ -65,6 +70,7 @@ def scan(target, mock, dockeronly, model, sarif, markdown, html, db, concurrency
 
     def event_handler(ev: PipelineEvent):
         color = {
+            "EXTRACT": "bold cyan",
             "INIT": "cyan",
             "STATIC_SCAN": "yellow",
             "AI_HUNT": "magenta",
@@ -75,6 +81,7 @@ def scan(target, mock, dockeronly, model, sarif, markdown, html, db, concurrency
             "RETEST_PATCH": "green",
             "FIX_VERIFIED": "bold green",
             "COMPLETE": "bold green",
+            "FAILED": "bold red",
         }.get(ev.stage, "white")
         console.print(f"[{color}]* [{ev.stage}][/{color}] {ev.message}")
 
@@ -142,6 +149,7 @@ def demo(mock, dockeronly, sarif, markdown, html):
             "RETEST_PATCH": "cyan",
             "FIX_VERIFIED": "bold green",
             "COMPLETE": "bold green",
+            "FAILED": "bold red",
         }.get(ev.stage, "white")
         console.print(f"[{color}]* [{ev.stage}][/{color}] {ev.message}")
 

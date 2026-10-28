@@ -8,7 +8,6 @@ import subprocess
 import tempfile
 import threading
 import uuid
-import zipfile
 from pathlib import Path
 from typing import Any, Optional
 from flask import Flask, jsonify, render_template, request, send_file
@@ -19,6 +18,7 @@ from scannex.db.store import FindingsStore
 from scannex.orchestrator.pipeline import PipelineEvent, ScannexOrchestrator
 from scannex.reporter.markdown_exporter import MarkdownExporter
 from scannex.reporter.sarif_exporter import SarifExporter
+from scannex.scanner.archive_extractor import extract_zip_archive
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def run_scan_async(session_id: str, target_dir: Path, mock_mode: bool, model_nam
     """Run ScanneX orchestrator in a background thread."""
     session = sessions[session_id]
     session["status"] = "running"
-    session["events"] = []
+    session.setdefault("events", [])
     session["active_sandboxes"] = []
 
     def event_handler(ev: PipelineEvent):
@@ -65,6 +65,7 @@ def run_scan_async(session_id: str, target_dir: Path, mock_mode: bool, model_nam
             "status": ev.finding.status.value if ev.finding else None,
         })
         session["current_stage"] = ev.stage
+        print(f"[{session_id[:8]}] [{ev.stage}] {ev.message}")
 
     try:
         config = ScannexConfig.from_env()
@@ -96,11 +97,21 @@ def run_scan_async(session_id: str, target_dir: Path, mock_mode: bool, model_nam
 
         session["status"] = "completed"
         session["current_stage"] = "COMPLETE"
+        print(f"[{session_id[:8]}] [COMPLETE] Scan finished with {len(findings)} findings.")
 
     except Exception as e:
         logger.error(f"Scan session {session_id} failed: {e}", exc_info=True)
+        print(f"[{session_id[:8]}] [ERROR] Scan session failed: {e}")
         session["status"] = "failed"
         session["error"] = str(e)
+        session["current_stage"] = "FAILED"
+        session["events"].append({
+            "stage": "FAILED",
+            "message": f"Scan failed: {str(e)}",
+            "vuln_type": None,
+            "title": None,
+            "status": None,
+        })
 
 
 @app.after_request
@@ -180,7 +191,7 @@ def upload_scan():
         return jsonify({"error": "No file uploaded"}), 400
 
     uploaded_file = request.files["file"]
-    if not uploaded_file.filename or not uploaded_file.filename.endswith(".zip"):
+    if not uploaded_file.filename or not uploaded_file.filename.lower().endswith(".zip"):
         return jsonify({"error": "Uploaded file must be a .zip archive"}), 400
 
     mock_mode = request.form.get("mock", "false").lower() in ("true", "1", "yes")
@@ -191,23 +202,17 @@ def upload_scan():
     temp_dir = Path(tempfile.mkdtemp(prefix=f"scannex_upload_{session_id[:8]}_"))
 
     try:
+        print(f"\n[ScanneX Upload] Received ZIP archive: {uploaded_file.filename}")
         zip_path = temp_dir / "upload.zip"
         uploaded_file.save(str(zip_path))
 
         extract_dir = temp_dir / "repo"
         extract_dir.mkdir(parents=True, exist_ok=True)
 
-        with zipfile.ZipFile(zip_path, "r") as z:
-            # Safe extraction avoiding zip slip
-            for member in z.infolist():
-                target_path = extract_dir / member.filename
-                if not target_path.resolve().is_relative_to(extract_dir.resolve()):
-                    raise ValueError(f"Unsafe path in ZIP: {member.filename}")
-            z.extractall(extract_dir)
+        final_dir = extract_zip_archive(zip_path, extract_dir)
+        py_count = len(list(final_dir.rglob("*.py")))
 
-        # If archive had a single enclosing directory, descend into it
-        subdirs = [p for p in extract_dir.iterdir() if p.is_dir() and not p.name.startswith(".")]
-        final_dir = subdirs[0] if len(subdirs) == 1 else extract_dir
+        print(f"[ScanneX Upload] Extracted '{uploaded_file.filename}' -> Root: {final_dir.name} ({py_count} Python files identified)")
 
         sessions[session_id] = {
             "id": session_id,
@@ -215,7 +220,15 @@ def upload_scan():
             "temp_dir": str(temp_dir),
             "status": "queued",
             "findings": [],
-            "events": [],
+            "events": [
+                {
+                    "stage": "EXTRACT",
+                    "message": f"Successfully unpacked '{uploaded_file.filename}' -> codebase root '{final_dir.name}' ({py_count} Python source files detected)",
+                    "vuln_type": None,
+                    "title": None,
+                    "status": None,
+                }
+            ],
             "error": None,
         }
 
@@ -229,6 +242,8 @@ def upload_scan():
         return jsonify({"session_id": session_id, "status": "queued"})
 
     except Exception as e:
+        logger.error(f"Failed to unpack ZIP archive: {e}", exc_info=True)
+        print(f"[ScanneX Upload ERROR] Failed to unpack ZIP archive: {e}")
         shutil.rmtree(temp_dir, ignore_errors=True)
         return jsonify({"error": f"Failed to unpack ZIP archive: {str(e)}"}), 500
 
@@ -251,6 +266,7 @@ def github_scan():
     clone_dir = temp_dir / "repo"
 
     try:
+        print(f"\n[ScanneX Git] Cloning repository: {repo_url}")
         cmd = ["git", "clone", "--depth", "1", repo_url, str(clone_dir)]
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if res.returncode != 0:
@@ -258,13 +274,24 @@ def github_scan():
             return jsonify({"error": f"Git clone failed: {res.stderr}"}), 400
 
         repo_name = repo_url.rstrip("/").split("/")[-1].replace(".git", "")
+        py_count = len(list(clone_dir.rglob("*.py")))
+        print(f"[ScanneX Git] Cloned {repo_name} ({py_count} Python files identified)")
+
         sessions[session_id] = {
             "id": session_id,
             "target_name": repo_name,
             "temp_dir": str(temp_dir),
             "status": "queued",
             "findings": [],
-            "events": [],
+            "events": [
+                {
+                    "stage": "GIT_CLONE",
+                    "message": f"Successfully cloned {repo_url} ({py_count} Python source files detected)",
+                    "vuln_type": None,
+                    "title": None,
+                    "status": None,
+                }
+            ],
             "error": None,
         }
 
@@ -295,6 +322,9 @@ def demo_scan():
 
     temp_dir = Path(tempfile.mkdtemp(prefix="scannex_demo_"))
     shutil.copytree(benchmark_dir, temp_dir, dirs_exist_ok=True)
+    py_count = len(list(temp_dir.rglob("*.py")))
+
+    print(f"\n[ScanneX Demo] Launching benchmark scan ({py_count} Python files)")
 
     sessions[session_id] = {
         "id": session_id,
@@ -302,7 +332,15 @@ def demo_scan():
         "temp_dir": str(temp_dir),
         "status": "queued",
         "findings": [],
-        "events": [],
+        "events": [
+            {
+                "stage": "DEMO_INIT",
+                "message": f"Initialized benchmark vulnerable app sandbox target ({py_count} Python source files)",
+                "vuln_type": None,
+                "title": None,
+                "status": None,
+            }
+        ],
         "error": None,
     }
 
