@@ -60,3 +60,12 @@ def test_upload_valid_zip(client):
     assert res.status_code == 200
     data = res.get_json()
     assert "session_id" in data
+
+
+def test_list_ollama_models(client):
+    res = client.get("/api/ollama/models")
+    assert res.status_code == 200
+    data = res.get_json()
+    assert "available" in data
+    assert "models" in data
+    assert isinstance(data["models"], list)

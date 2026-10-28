@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 app = Flask(__name__, template_folder=str(TEMPLATE_DIR))
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.jinja_env.auto_reload = True
 
 # In-memory session tracking
 sessions: dict[str, dict[str, Any]] = {}
@@ -81,10 +83,74 @@ def run_scan_async(session_id: str, target_dir: Path, mock_mode: bool, model_nam
         session["error"] = str(e)
 
 
+@app.after_request
+def add_cache_headers(response):
+    """Prevent aggressive browser caching during local development."""
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
 @app.route("/")
 def index():
     """Render the ScanneX single-page dashboard."""
     return render_template("index.html")
+
+
+@app.route("/api/ollama/models", methods=["GET"])
+def list_ollama_models():
+    """Discover locally installed Ollama models dynamically."""
+    import urllib.request
+    import json
+
+    ollama_base = os.getenv("OLLAMA_API_BASE", "http://127.0.0.1:11434").rstrip("/")
+    tags_url = f"{ollama_base}/api/tags"
+
+    try:
+        req = urllib.request.Request(tags_url, headers={"User-Agent": "ScanneX/1.0"})
+        with urllib.request.urlopen(req, timeout=2.5) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode("utf-8"))
+                models = []
+                for m in data.get("models", []):
+                    name = m.get("name", "")
+                    details = m.get("details", {}) or {}
+                    param_size = details.get("parameter_size", "")
+                    quant = details.get("quantization_level", "")
+                    size_bytes = m.get("size", 0)
+
+                    label = name
+                    if param_size:
+                        label += f" ({param_size})"
+                    elif size_bytes:
+                        mb = size_bytes / (1024 * 1024)
+                        if mb >= 1024:
+                            label += f" ({mb/1024:.1f} GB)"
+                        else:
+                            label += f" ({int(mb)} MB)"
+
+                    models.append({
+                        "name": name,
+                        "model_id": f"ollama/{name}",
+                        "label": label,
+                        "parameter_size": param_size,
+                        "quantization": quant,
+                        "size": size_bytes,
+                    })
+                return jsonify({
+                    "available": True,
+                    "ollama_base": ollama_base,
+                    "models": models,
+                })
+    except Exception as e:
+        logger.debug(f"Local Ollama connection failed: {e}")
+        return jsonify({
+            "available": False,
+            "ollama_base": ollama_base,
+            "error": str(e),
+            "models": [],
+        })
 
 
 @app.route("/api/scan/upload", methods=["POST"])
