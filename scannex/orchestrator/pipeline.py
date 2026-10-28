@@ -115,7 +115,16 @@ class ScannexOrchestrator:
                 semgrep_findings = []
 
             static_findings = bandit_findings + semgrep_findings
-            self._emit("STATIC_SCAN", f"Static scan complete: {len(static_findings)} rule findings identified.")
+            self._emit(
+                "STATIC_SCAN",
+                f"Static scan complete: {len(static_findings)} rule findings identified "
+                f"({len(bandit_findings)} Bandit, {len(semgrep_findings)} Semgrep).",
+                metadata={
+                    "bandit_count": len(bandit_findings),
+                    "semgrep_count": len(semgrep_findings),
+                    "total_count": len(static_findings),
+                },
+            )
 
             # -------------------------------------------------------------
             # Track 2: AI Hunter + Immediate Adversarial Verifier
