@@ -20,6 +20,7 @@ class ScannexConfig(BaseModel):
     max_concurrency: int = Field(default=2)
     sandbox_timeout_sec: int = Field(default=25)
     probe_timeout_sec: int = Field(default=5)
+    llm_timeout_sec: int = Field(default=180)
     
     # Canary configuration
     canary_prefix: str = Field(default="SCANX_CANARY_")
@@ -35,6 +36,8 @@ class ScannexConfig(BaseModel):
         """Load configuration from environment variables."""
         mock = os.getenv("SCANNEX_MOCK_MODE", "").lower() in ("1", "true", "yes")
         model = os.getenv("SCANNEX_MODEL", "gemini/gemini-2.5-flash")
+        timeout_env = os.getenv("SCANNEX_LLM_TIMEOUT")
+        llm_timeout = int(timeout_env) if timeout_env else 180
         return cls(
             model_name=model,
             mock_mode=mock,
@@ -42,4 +45,5 @@ class ScannexConfig(BaseModel):
             max_concurrency=int(os.getenv("SCANNEX_MAX_CONCURRENCY", "2")),
             prefer_docker=os.getenv("SCANNEX_USE_SUBPROCESS", "").lower() not in ("1", "true"),
             docker_only=os.getenv("SCANNEX_DOCKER_ONLY", "").lower() in ("1", "true", "yes"),
+            llm_timeout_sec=llm_timeout,
         )

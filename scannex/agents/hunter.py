@@ -21,6 +21,7 @@ HUNTER_SYSTEM_PROMPT = """You are ScanneX AI Hunter, a world-class application s
 Analyze the provided source code for logic bugs, authentication/authorization flaws, SSRF, IDOR, SSTI,
 and dangerous input mishandling that standard static AST rules often miss.
 
+Be concise. Limit your findings to at most 3 of the most critical vulnerabilities.
 For each genuine vulnerability found, output a JSON array of findings matching this exact schema:
 [
   {
@@ -39,7 +40,7 @@ For each genuine vulnerability found, output a JSON array of findings matching t
   }
 ]
 If no logic vulnerabilities are found, return an empty array [].
-Output ONLY valid JSON.
+Output ONLY valid JSON without markdown conversational wrapping.
 """
 
 
@@ -59,13 +60,24 @@ class HunterAgent(BaseAgent):
         findings: list[Finding] = []
         for file_path in file_paths:
             path = Path(file_path)
-            if not path.is_file() or ".venv" in path.parts:
+            if not path.is_file():
                 continue
 
+            # Skip hidden folders, virtualenvs, and pycache
+            if any(part.startswith(".") and part != "." for part in path.parts) or "__pycache__" in path.parts:
+                continue
+
+            # Skip very large files (> 60KB) to prevent CPU token timeouts
             try:
+                if path.stat().st_size > 60_000:
+                    continue
                 content = path.read_text(encoding="utf-8", errors="ignore")
             except Exception:
                 continue
+
+            # Limit prompt context to first 4000 characters if exceptionally long
+            if len(content) > 4000:
+                content = content[:4000] + "\n# ... (truncated for analysis)\n"
 
             user_prompt = f"File: {path.name}\nSource Code:\n```python\n{content}\n```"
             response_text = await self.call_llm(

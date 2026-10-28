@@ -16,11 +16,11 @@ Check for:
 3. Dead code or unreachable paths.
 4. Hallucinated APIs or non-existent sinks.
 
-Respond ONLY with valid JSON in this schema:
+Be concise. Respond ONLY with valid JSON in this schema:
 {
   "up_approved": true | false,
   "confidence": 0.0 to 1.0,
-  "reason": "Clear explanation of why this finding is upheld or disproved",
+  "reason": "Brief explanation of why this finding is upheld or disproved",
   "sanitizer_found": "Name or snippet of sanitizer, or null if none"
 }
 """
@@ -50,6 +50,9 @@ class VerifierAgent(BaseAgent):
                 code_context = file_path.read_text(encoding="utf-8", errors="ignore")
             except Exception:
                 pass
+
+        if len(code_context) > 4000:
+            code_context = code_context[:4000] + "\n# ... (truncated)\n"
 
         user_prompt = f"""Target File: {finding.file_path}
 Reported Line: {finding.line_number}

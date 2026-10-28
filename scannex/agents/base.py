@@ -28,6 +28,7 @@ class BaseAgent:
         try:
             import litellm
 
+            timeout = getattr(self.config, "llm_timeout_sec", 180)
             kwargs: dict[str, Any] = {
                 "model": self.config.model_name,
                 "messages": [
@@ -35,7 +36,8 @@ class BaseAgent:
                     {"role": "user", "content": user_prompt},
                 ],
                 "temperature": 0.1,
-                "timeout": 60,
+                "timeout": timeout,
+                "max_tokens": 1500,
             }
 
             # Configure Ollama IPv4 host to avoid Windows IPv6 resolution hang

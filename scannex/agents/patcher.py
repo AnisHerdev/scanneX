@@ -12,7 +12,7 @@ PATCHER_SYSTEM_PROMPT = """You are ScanneX Speculative Remediation Agent.
 Your job is to generate an immediate, minimal, highly secure patch that remediates the vulnerability
 without breaking existing application functionality.
 
-Output ONLY valid JSON in this schema:
+Be concise. Output ONLY valid JSON in this schema:
 {
   "file_path": "path/to/file.py",
   "search_block": "Exact contiguous snippet of lines to replace",
@@ -39,6 +39,9 @@ class SpeculativePatchAgent(BaseAgent):
                 code_context = file_path.read_text(encoding="utf-8", errors="ignore")
             except Exception:
                 pass
+
+        if len(code_context) > 4000:
+            code_context = code_context[:4000] + "\n# ... (truncated)\n"
 
         user_prompt = f"""File: {finding.file_path}
 Vulnerability: {finding.vuln_type} ({finding.cwe})
