@@ -1,8 +1,10 @@
 """Semgrep static taint analysis integration with graceful fallback."""
 
 import json
+import re
 import shutil
 import subprocess
+import sys
 import uuid
 from pathlib import Path
 from typing import Optional
@@ -24,20 +26,39 @@ class SemgrepRunner:
         self.target_dir = Path(target_dir).resolve()
         self.route_mapper = RouteMapper(self.target_dir)
 
+    @classmethod
+    def get_executable(cls) -> Optional[str]:
+        """Find the semgrep executable on PATH or adjacent to sys.executable."""
+        exe = shutil.which("semgrep")
+        if exe:
+            return exe
+        py_dir = Path(sys.executable).parent
+        exe = shutil.which("semgrep", path=str(py_dir))
+        if exe:
+            return exe
+        for candidate in [py_dir / "semgrep.exe", py_dir / "semgrep"]:
+            if candidate.exists():
+                return str(candidate)
+        return None
+
     def is_available(self) -> bool:
-        """Check if Semgrep CLI is installed in PATH."""
-        return shutil.which("semgrep") is not None
+        """Check if Semgrep CLI is installed and accessible."""
+        return self.get_executable() is not None
 
     def run(self) -> list[Finding]:
-        """Run Semgrep scan if available; return empty list if not installed."""
-        if not self.is_available() or not self.target_dir.exists():
+        """Run Semgrep scan using --config auto; return empty list if execution fails."""
+        semgrep_bin = self.get_executable()
+        if not semgrep_bin or not self.target_dir.exists():
+            print("Execution Failure")
             return []
 
         cmd = [
-            "semgrep",
+            semgrep_bin,
             "scan",
             "--config",
-            "p/security-audit",
+            "auto",
+            "--metrics=off",
+            "--disable-version-check",
             "--json",
             "-q",
             str(self.target_dir),
@@ -52,9 +73,11 @@ class SemgrepRunner:
             )
             raw_json = result.stdout.strip()
             if not raw_json:
+                print("Execution Failure")
                 return []
             data = json.loads(raw_json)
         except Exception:
+            print("Execution Failure")
             return []
 
         findings: list[Finding] = []
@@ -64,6 +87,77 @@ class SemgrepRunner:
                 findings.append(finding)
 
         return findings
+
+    def _resolve_vulnerability_metadata(self, check_id: str, extra: dict) -> tuple[str, str, CanaryType]:
+        """Dynamically extract CWE, vulnerability type, and canary probe type from Semgrep metadata."""
+        metadata = extra.get("metadata", {})
+
+        # 1. Resolve CWE identifier
+        cwe = "CWE-699"
+        raw_cwe = metadata.get("cwe")
+        if isinstance(raw_cwe, list) and raw_cwe:
+            raw_cwe = str(raw_cwe[0])
+        elif isinstance(raw_cwe, str):
+            raw_cwe = raw_cwe.strip()
+        else:
+            raw_cwe = ""
+
+        if raw_cwe:
+            cwe_match = re.search(r"CWE-\d+", raw_cwe, re.IGNORECASE)
+            if cwe_match:
+                cwe = cwe_match.group(0).upper()
+            else:
+                cwe = raw_cwe.split(":")[0].strip()
+
+        # 2. Extract classification signals
+        vuln_class = metadata.get("vulnerability_class")
+        if isinstance(vuln_class, list) and vuln_class:
+            vuln_class_str = " ".join(str(v) for v in vuln_class).lower()
+        elif isinstance(vuln_class, str):
+            vuln_class_str = vuln_class.lower()
+        else:
+            vuln_class_str = ""
+
+        combined_signals = f"{check_id} {vuln_class_str} {cwe} {extra.get('message', '')}".lower()
+
+        # 3. Classify into standard ScanneX vulnerability categories
+        if "sql" in combined_signals or cwe == "CWE-89":
+            return "SQL_INJECTION", (cwe if cwe != "CWE-699" else "CWE-89"), CanaryType.REFLECTED
+
+        if any(k in combined_signals for k in ["command", "os.system", "subprocess", "shell", "exec", "system("]) or cwe in ("CWE-78", "CWE-88"):
+            return "COMMAND_INJECTION", (cwe if cwe != "CWE-699" else "CWE-78"), CanaryType.FILE_MARKER
+
+        if any(k in combined_signals for k in ["template", "ssti", "render_template_string"]) or cwe in ("CWE-94", "CWE-96", "CWE-1336"):
+            return "SSTI", (cwe if cwe != "CWE-699" else "CWE-94"), CanaryType.REFLECTED
+
+        if "xss" in combined_signals or "cross-site scripting" in combined_signals or cwe == "CWE-79":
+            return "XSS", (cwe if cwe != "CWE-699" else "CWE-79"), CanaryType.REFLECTED
+
+        if any(k in combined_signals for k in ["traversal", "file inclusion", "lfi", "rfi", "path-traversal"]) or cwe in ("CWE-22", "CWE-23", "CWE-98"):
+            return "PATH_TRAVERSAL", (cwe if cwe != "CWE-699" else "CWE-22"), CanaryType.REFLECTED
+
+        if any(k in combined_signals for k in ["deserialization", "pickle", "yaml.load", "unserialize"]) or cwe == "CWE-502":
+            return "INSECURE_DESERIALIZATION", (cwe if cwe != "CWE-699" else "CWE-502"), CanaryType.FILE_MARKER
+
+        if any(k in combined_signals for k in ["ssrf", "server-side request"]) or cwe == "CWE-918":
+            return "SSRF", (cwe if cwe != "CWE-699" else "CWE-918"), CanaryType.REFLECTED
+
+        if any(k in combined_signals for k in ["auth", "jwt", "login", "session", "bypass"]) or cwe in ("CWE-287", "CWE-306"):
+            return "AUTH_BYPASS", (cwe if cwe != "CWE-699" else "CWE-287"), CanaryType.REFLECTED
+
+        if "idor" in combined_signals or cwe == "CWE-639":
+            return "IDOR", (cwe if cwe != "CWE-699" else "CWE-639"), CanaryType.REFLECTED
+
+        if any(k in combined_signals for k in ["hash", "md5", "sha1", "crypto", "cipher"]) or cwe in ("CWE-327", "CWE-328"):
+            return "INSECURE_HASH", (cwe if cwe != "CWE-699" else "CWE-327"), CanaryType.REFLECTED
+
+        # If Semgrep provided an explicit vulnerability_class, derive an uppercase token
+        if vuln_class_str:
+            clean_class = re.sub(r"[^A-Za-z0-9]+", "_", vuln_class_str.strip()).upper().strip("_")
+            if clean_class:
+                return clean_class, cwe, CanaryType.REFLECTED
+
+        return "TAINT_SINK", cwe, CanaryType.REFLECTED
 
     def _parse_semgrep_item(self, item: dict) -> Optional[Finding]:
         """Convert a Semgrep JSON finding into a ScanneX Finding."""
@@ -76,6 +170,19 @@ class SemgrepRunner:
         severity_str = extra.get("severity", "WARNING").upper()
         code_sink = extra.get("lines", "").strip()
 
+        # Fallback to reading the actual source file line if code_sink is empty or 'requires login'
+        if not code_sink or code_sink.lower() == "requires login":
+            try:
+                target_file = Path(path_str)
+                if not target_file.is_absolute():
+                    target_file = (self.target_dir / target_file).resolve()
+                if target_file.is_file():
+                    file_lines = target_file.read_text(encoding="utf-8", errors="ignore").splitlines()
+                    if 1 <= line_number <= len(file_lines):
+                        code_sink = file_lines[line_number - 1].strip()
+            except Exception:
+                pass
+
         severity_map = {
             "ERROR": Severity.HIGH,
             "WARNING": Severity.MEDIUM,
@@ -83,25 +190,8 @@ class SemgrepRunner:
         }
         severity = severity_map.get(severity_str, Severity.MEDIUM)
 
-        # Identify vulnerability type from check_id
-        vuln_type = "TAINT_SINK"
-        cwe = "CWE-699"
-        canary_type = CanaryType.REFLECTED
-
-        check_lower = check_id.lower()
-        if "sql" in check_lower:
-            vuln_type = "SQL_INJECTION"
-            cwe = "CWE-89"
-        elif "command" in check_lower or "exec" in check_lower:
-            vuln_type = "COMMAND_INJECTION"
-            cwe = "CWE-78"
-            canary_type = CanaryType.FILE_MARKER
-        elif "template" in check_lower or "ssti" in check_lower:
-            vuln_type = "SSTI"
-            cwe = "CWE-94"
-        elif "xss" in check_lower:
-            vuln_type = "XSS"
-            cwe = "CWE-79"
+        # Dynamically resolve vulnerability type, CWE, and canary probe type
+        vuln_type, cwe, canary_type = self._resolve_vulnerability_metadata(check_id, extra)
 
         try:
             rel_path = str(Path(path_str).relative_to(self.target_dir))
