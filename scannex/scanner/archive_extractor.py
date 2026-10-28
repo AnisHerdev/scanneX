@@ -43,6 +43,8 @@ PROJECT_ROOT_INDICATORS: Set[str] = {
     "main.py",
     "server.py",
     "run.py",
+    "composer.json",
+    "index.php",
 }
 
 
@@ -61,12 +63,12 @@ def resolve_project_root(extract_dir: Path | str) -> Path:
         except (OSError, PermissionError):
             return curr
 
-        # Check if Python files exist directly in curr
-        py_files_here = [
+        # Check if Python or PHP files exist directly in curr
+        code_files_here = [
             p for p in entries
-            if p.is_file() and p.suffix == ".py" and p.name not in METADATA_IGNORE_NAMES
+            if p.is_file() and p.suffix in (".py", ".php") and p.name not in METADATA_IGNORE_NAMES
         ]
-        if py_files_here:
+        if code_files_here:
             # Code files are present at this level; curr is the root
             return curr
 

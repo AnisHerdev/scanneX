@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import uuid
 from pathlib import Path
 from typing import Optional
@@ -216,12 +217,39 @@ class SemgrepRunner:
         route = self.route_mapper.find_route_for_line(path_str, line_number)
         if route:
             canary_token = f"SCANX_CANARY_{uuid.uuid4().hex[:8].upper()}"
+            method = route.methods[0] if route.methods else "GET"
+            target_param = route.param_names[0] if route.param_names else "input"
+            param_source = route.param_sources.get(target_param, "param")
+
+            params: dict = {}
+            data: dict = {}
+            file_marker_path = None
+
+            if canary_type == CanaryType.FILE_MARKER:
+                temp_dir = Path(tempfile.gettempdir())
+                file_marker_path = str(temp_dir / f"{canary_token.lower()}.txt")
+                payload = f"127.0.0.1 & echo canary > {file_marker_path}"
+            elif vuln_type == "SQL_INJECTION":
+                payload = f"' UNION SELECT 1, '{canary_token}', 'admin'--"
+            elif vuln_type == "SSTI":
+                payload = "{{ 1337 * 7331 }}"
+                canary_token = "9799547"
+            else:
+                payload = canary_token
+
+            if method == "POST" or param_source == "data":
+                data[target_param] = payload
+            else:
+                params[target_param] = payload
+
             probe_spec = ProbeSpec(
                 endpoint=route.endpoint,
-                method=route.methods[0] if route.methods else "GET",
-                params={route.param_names[0]: canary_token} if route.param_names else {"canary": canary_token},
+                method=method,
+                params=params,
+                data=data,
                 canary_type=canary_type,
                 canary_token=canary_token,
+                file_marker_path=file_marker_path,
             )
             finding.probe_spec = probe_spec
             finding.add_trace(f"Mapped to HTTP endpoint {probe_spec.method} {probe_spec.endpoint}")
