@@ -10,6 +10,7 @@ dependencies = [
     "pydantic>=2.6.0",
     "requests>=2.31.0",
     "bandit>=1.7.8",
+    "semgrep>=1.60.0",
     "flask>=3.0.0",
 ]
 
@@ -37,4 +38,3 @@ exclude = ["test_target*", "tests*"]
 [tool.setuptools.package-data]
 "scannex.web" = ["templates/*"]
 "scannex.benchmark.vulnerable_flask_app" = ["*"]
-

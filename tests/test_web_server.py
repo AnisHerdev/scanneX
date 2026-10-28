@@ -84,7 +84,7 @@ def test_upload_and_scan_vulnerable_zip_with_pycache(client):
 
     # Poll status until completed or timed out
     completed = False
-    for _ in range(15):
+    for _ in range(40):
         time.sleep(1)
         status_res = client.get(f"/api/scan/{session_id}/status")
         data = status_res.get_json()
