@@ -1104,26 +1104,39 @@
 
       <!-- Options & One-Click Demo -->
       <div class="options-bar">
-        <div class="options-group">
-          <label for="engine-select" class="select-label">Analysis Model:</label>
-          <span id="ollama-status-badge" class="badge badge-unverified">Checking Ollama...</span>
-          <select id="engine-select" class="select-input" onchange="handleModelChange()" aria-label="Select AI analysis engine or local model">
-            <optgroup id="optgroup-ollama" label="Local Ollama Models">
-              <option value="ollama/llama3.2:1b" selected>Detecting Ollama models...</option>
-            </optgroup>
-            <optgroup label="Cloud &amp; Evaluation">
-              <option value="gemini">Google Gemini (gemini-2.5-flash)</option>
-              <option value="mock">Fast Evaluation (Deterministic Mock)</option>
-            </optgroup>
-          </select>
-          <button type="button" class="btn btn-secondary btn-sm" id="btn-refresh-ollama" onclick="fetchOllamaModels(true)" title="Rescan local Ollama instance for newly installed models">
-            <svg id="icon-refresh" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="23 4 23 10 17 10"></polyline>
-              <polyline points="1 20 1 14 7 14"></polyline>
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-            </svg>
-            <span id="refresh-ollama-label">Refresh</span>
-          </button>
+        <div class="options-group" style="flex-wrap: wrap; gap: 10px;">
+
+          <!-- 3-Way LLM Mode Segmented Toggle -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="select-label">Mode:</span>
+            <div id="mode-toggle" style="display: inline-flex; border: 1px solid var(--border-strong); border-radius: 6px; overflow: hidden; font-size: 12px;">
+              <button id="mode-btn-mock" class="mode-seg-btn active" onclick="setLLMMode('mock')" title="Deterministic offline mode — no API key needed" style="background: var(--bg-surface-elevated); color: var(--text-primary); border: none; border-right: 1px solid var(--border-strong); padding: 6px 12px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 140ms;">Simulation / Mock</button>
+              <button id="mode-btn-ollama" class="mode-seg-btn" onclick="setLLMMode('ollama')" title="Use a locally-running Ollama model" style="background: var(--btn-sec-bg); color: var(--text-secondary); border: none; border-right: 1px solid var(--border-strong); padding: 6px 12px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 140ms;">
+                Local LLM (Ollama)
+                <span id="ollama-status-badge" class="badge badge-unverified" style="margin-left: 6px; font-size: 10px;">…</span>
+              </button>
+              <button id="mode-btn-gemini" class="mode-seg-btn" onclick="setLLMMode('gemini')" title="Use Google Gemini API (requires GEMINI_API_KEY)" style="background: var(--btn-sec-bg); color: var(--text-secondary); border: none; padding: 6px 12px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 140ms;">Online (Gemini)</button>
+            </div>
+            <!-- Hidden Ollama model detail select, shown when Ollama mode is active -->
+            <select id="ollama-model-select" class="select-input" onchange="handleModelChange()" aria-label="Select local Ollama model" style="display: none; max-width: 200px;">
+              <option value="ollama/llama3.2:1b">Detecting models...</option>
+            </select>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-refresh-ollama" onclick="fetchOllamaModels(true)" title="Rescan local Ollama instance" style="display: none;">
+              <svg id="icon-refresh" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              <span id="refresh-ollama-label">Refresh</span>
+            </button>
+          </div>
+
+          <!-- Docker-Only Toggle -->
+          <label id="docker-only-label" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;" title="Abort scan if Docker is unavailable (no subprocess fallback)">
+            <input type="checkbox" id="docker-only-checkbox" onchange="handleDockerOnlyChange()" style="accent-color: var(--accent-primary); width: 14px; height: 14px; cursor: pointer;" />
+            Docker-only sandbox
+          </label>
+
         </div>
         <button class="btn btn-secondary" id="btn-demo-scan" onclick="startDemoScan()">
           <svg id="icon-demo-scan" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1264,12 +1277,54 @@
     document.addEventListener('DOMContentLoaded', () => {
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
       updateThemeUI(currentTheme);
+      // Restore persisted mode preference
+      const savedLLMMode = localStorage.getItem('scannex-llm-mode') || 'mock';
+      setLLMMode(savedLLMMode, false);
       fetchOllamaModels(false);
+      // Restore docker-only preference
+      const dockerOnly = localStorage.getItem('scannex-docker-only') === '1';
+      document.getElementById('docker-only-checkbox').checked = dockerOnly;
+      updateDockerOnlyLabel(dockerOnly);
     });
+
+    // 3-Way LLM Mode Toggle
+    let currentLLMMode = 'mock';
+    function setLLMMode(mode, save = true) {
+      currentLLMMode = mode;
+      if (save) localStorage.setItem('scannex-llm-mode', mode);
+      const btns = document.querySelectorAll('.mode-seg-btn');
+      btns.forEach(b => {
+        b.style.background = 'var(--btn-sec-bg)';
+        b.style.color = 'var(--text-secondary)';
+        b.style.fontWeight = '500';
+      });
+      const active = document.getElementById('mode-btn-' + mode);
+      if (active) {
+        active.style.background = 'var(--bg-surface-elevated)';
+        active.style.color = 'var(--text-primary)';
+        active.style.fontWeight = '600';
+      }
+      // Show/hide Ollama model picker
+      const showOllama = mode === 'ollama';
+      document.getElementById('ollama-model-select').style.display = showOllama ? 'block' : 'none';
+      document.getElementById('btn-refresh-ollama').style.display = showOllama ? 'inline-flex' : 'none';
+    }
+
+    function handleDockerOnlyChange() {
+      const checked = document.getElementById('docker-only-checkbox').checked;
+      localStorage.setItem('scannex-docker-only', checked ? '1' : '0');
+      updateDockerOnlyLabel(checked);
+    }
+
+    function updateDockerOnlyLabel(active) {
+      const label = document.getElementById('docker-only-label');
+      label.style.color = active ? 'var(--text-primary)' : 'var(--text-secondary)';
+      label.style.fontWeight = active ? '600' : '500';
+    }
 
     // Dynamic Ollama Model Discovery
     function handleModelChange() {
-      const select = document.getElementById('engine-select');
+      const select = document.getElementById('ollama-model-select');
       if (select && select.value) {
         localStorage.setItem('scannex-model', select.value);
       }
@@ -1277,86 +1332,59 @@
 
     async function fetchOllamaModels(notifyUser = false) {
       const badge = document.getElementById('ollama-status-badge');
-      const optgroup = document.getElementById('optgroup-ollama');
-      const select = document.getElementById('engine-select');
+      const select = document.getElementById('ollama-model-select');
       const refreshIcon = document.getElementById('icon-refresh');
 
       if (refreshIcon) refreshIcon.classList.add('spinner');
       if (badge) {
         badge.className = 'badge badge-unverified';
-        badge.innerText = 'Checking Ollama...';
+        badge.innerText = '…';
       }
 
       try {
         const res = await fetch('/api/ollama/models');
-        if (!res.ok) {
-          throw new Error(`Server returned HTTP ${res.status}. Please restart the ScanneX server terminal to load the new endpoint.`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (refreshIcon) refreshIcon.classList.remove('spinner');
 
-        optgroup.innerHTML = '';
+        select.innerHTML = '';
 
         if (data.available && data.models && data.models.length > 0) {
           if (badge) {
             badge.className = 'badge badge-fixed';
-            badge.innerText = `Ollama Online (${data.models.length})`;
+            badge.innerText = `${data.models.length} online`;
           }
-
           data.models.forEach(m => {
             const opt = document.createElement('option');
             opt.value = m.model_id;
-            opt.innerText = `Local Ollama: ${m.label}`;
-            optgroup.appendChild(opt);
+            opt.innerText = m.label;
+            select.appendChild(opt);
           });
-
-          // Check if user had a saved model preference
           const savedModel = localStorage.getItem('scannex-model');
           const hasSaved = savedModel && Array.from(select.options).some(o => o.value === savedModel);
           if (hasSaved) {
             select.value = savedModel;
           } else {
-            // Default to llama3.2 or qwen if present, or first model
             const preferred = data.models.find(m => m.name.includes('llama3.2') || m.name.includes('qwen')) || data.models[0];
             select.value = preferred.model_id;
             localStorage.setItem('scannex-model', select.value);
           }
-
-          if (notifyUser) {
-            showAlert(`Discovered ${data.models.length} local Ollama models on ${data.ollama_base || '127.0.0.1:11434'}.`, 'warn');
-          }
+          if (notifyUser) showAlert(`Discovered ${data.models.length} Ollama models.`, 'warn');
         } else {
-          if (badge) {
-            badge.className = 'badge badge-unverified';
-            badge.innerText = 'Ollama Offline';
-          }
-
+          if (badge) { badge.className = 'badge badge-unverified'; badge.innerText = 'offline'; }
           const emptyOpt = document.createElement('option');
           emptyOpt.disabled = true;
-          emptyOpt.innerText = 'Ollama offline (no models detected)';
-          optgroup.appendChild(emptyOpt);
-
-          if (select.value.startsWith('ollama/')) {
-            select.value = 'mock';
-          }
-
-          if (notifyUser) {
-            showAlert('Local Ollama service unreachable at http://127.0.0.1:11434. Start Ollama and try again.', 'error');
-          }
+          emptyOpt.innerText = 'Ollama offline';
+          select.appendChild(emptyOpt);
+          if (currentLLMMode === 'ollama') setLLMMode('mock');
+          if (notifyUser) showAlert('Ollama unreachable at http://127.0.0.1:11434. Start Ollama and refresh.', 'error');
         }
       } catch (err) {
         if (refreshIcon) refreshIcon.classList.remove('spinner');
-        if (badge) {
-          badge.className = 'badge badge-unverified';
-          badge.innerText = 'Ollama Offline';
-        }
-        optgroup.innerHTML = '<option disabled>Ollama service unreachable</option>';
-        if (select.value.startsWith('ollama/')) {
-          select.value = 'mock';
-        }
-        if (notifyUser) {
-          showAlert('Network error communicating with Ollama: ' + err.message, 'error');
-        }
+        if (badge) { badge.className = 'badge badge-unverified'; badge.innerText = 'offline'; }
+        select.innerHTML = '<option disabled>Ollama unreachable</option>';
+        if (currentLLMMode === 'ollama') setLLMMode('mock');
+        if (notifyUser) showAlert('Ollama error: ' + err.message, 'error');
       }
     }
 
@@ -1411,14 +1439,17 @@
     }
 
     function getEngineConfig() {
-      const selected = document.getElementById('engine-select').value;
-      if (selected === 'gemini') {
-        return { mock: false, model: 'gemini/gemini-2.5-flash' };
-      } else if (selected === 'mock') {
-        return { mock: true, model: 'ollama/llama3.2:1b' };
+      const dockerOnly = document.getElementById('docker-only-checkbox').checked;
+      if (currentLLMMode === 'mock') {
+        return { mock: true, model: 'ollama/llama3.2:1b', docker_only: dockerOnly };
+      } else if (currentLLMMode === 'gemini') {
+        return { mock: false, model: 'gemini/gemini-2.5-flash', docker_only: dockerOnly };
       } else {
-        // Selected a dynamic local Ollama model (e.g. "ollama/qwen2.5:0.5b")
-        return { mock: false, model: selected };
+        // Ollama: use selected model from picker
+        const select = document.getElementById('ollama-model-select');
+        const model = select && select.value && !select.options[select.selectedIndex]?.disabled
+          ? select.value : 'ollama/llama3.2:1b';
+        return { mock: false, model, docker_only: dockerOnly };
       }
     }
 
@@ -1434,6 +1465,7 @@
       formData.append('file', file);
       formData.append('mock', config.mock ? 'true' : 'false');
       formData.append('model', config.model);
+      formData.append('docker_only', config.docker_only ? 'true' : 'false');
 
       fetch('/api/scan/upload', { method: 'POST', body: formData })
         .then(res => res.json())
@@ -1471,7 +1503,7 @@
       fetch('/api/scan/github', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url, mock: config.mock, model: config.model })
+        body: JSON.stringify({ url: url, mock: config.mock, model: config.model, docker_only: config.docker_only })
       })
       .then(res => res.json())
       .then(data => {
@@ -1501,7 +1533,7 @@
       fetch('/api/scan/demo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mock: config.mock, model: config.model })
+        body: JSON.stringify({ mock: config.mock, model: config.model, docker_only: config.docker_only })
       })
       .then(res => res.json())
       .then(data => {

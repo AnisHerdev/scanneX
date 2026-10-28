@@ -68,7 +68,11 @@ class SandboxExecutor:
                 await self._start_docker(entrypoint)
                 return
             except Exception as e:
+                if self.config.docker_only:
+                    raise RuntimeError(f"Docker sandbox failed and --dockeronly is set: {e}") from e
                 logger.warning(f"Docker sandbox startup failed ({e}); falling back to subprocess.")
+        elif self.config.docker_only:
+            raise RuntimeError("Docker is unavailable and --dockeronly is set. Start Docker and retry.")
 
         await self._start_subprocess(entrypoint)
 

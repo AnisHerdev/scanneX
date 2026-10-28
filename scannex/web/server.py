@@ -31,7 +31,7 @@ app.jinja_env.auto_reload = True
 sessions: dict[str, dict[str, Any]] = {}
 
 
-def run_scan_async(session_id: str, target_dir: Path, mock_mode: bool, model_name: str) -> None:
+def run_scan_async(session_id: str, target_dir: Path, mock_mode: bool, model_name: str, docker_only: bool = False) -> None:
     """Run ScanneX orchestrator in a background thread."""
     session = sessions[session_id]
     session["status"] = "running"
@@ -50,6 +50,7 @@ def run_scan_async(session_id: str, target_dir: Path, mock_mode: bool, model_nam
     try:
         config = ScannexConfig.from_env()
         config.mock_mode = mock_mode
+        config.docker_only = docker_only
         if model_name:
             config.model_name = model_name
         
@@ -163,8 +164,9 @@ def upload_scan():
     if not uploaded_file.filename or not uploaded_file.filename.endswith(".zip"):
         return jsonify({"error": "Uploaded file must be a .zip archive"}), 400
 
-    mock_mode = request.form.get("mock", "true").lower() in ("true", "1", "yes")
+    mock_mode = request.form.get("mock", "false").lower() in ("true", "1", "yes")
     model_name = request.form.get("model", "ollama/llama3.2:1b")
+    docker_only = request.form.get("docker_only", "false").lower() in ("true", "1", "yes")
 
     session_id = str(uuid.uuid4())
     temp_dir = Path(tempfile.mkdtemp(prefix=f"scannex_upload_{session_id[:8]}_"))
@@ -200,7 +202,7 @@ def upload_scan():
 
         thread = threading.Thread(
             target=run_scan_async,
-            args=(session_id, final_dir, mock_mode, model_name),
+            args=(session_id, final_dir, mock_mode, model_name, docker_only),
             daemon=True,
         )
         thread.start()
@@ -221,8 +223,9 @@ def github_scan():
     if not repo_url or ("github.com" not in repo_url):
         return jsonify({"error": "Valid GitHub URL required (e.g. https://github.com/owner/repo)"}), 400
 
-    mock_mode = str(data.get("mock", "true")).lower() in ("true", "1", "yes")
+    mock_mode = str(data.get("mock", "false")).lower() in ("true", "1", "yes")
     model_name = data.get("model", "ollama/llama3.2:1b")
+    docker_only = str(data.get("docker_only", "false")).lower() in ("true", "1", "yes")
 
     session_id = str(uuid.uuid4())
     temp_dir = Path(tempfile.mkdtemp(prefix=f"scannex_git_{session_id[:8]}_"))
@@ -248,7 +251,7 @@ def github_scan():
 
         thread = threading.Thread(
             target=run_scan_async,
-            args=(session_id, clone_dir, mock_mode, model_name),
+            args=(session_id, clone_dir, mock_mode, model_name, docker_only),
             daemon=True,
         )
         thread.start()
@@ -267,8 +270,9 @@ def demo_scan():
     benchmark_dir = get_benchmark_dir()
 
     data = request.get_json(silent=True) or request.form
-    mock_mode = str(data.get("mock", "true")).lower() in ("true", "1", "yes")
+    mock_mode = str(data.get("mock", "false")).lower() in ("true", "1", "yes")
     model_name = data.get("model", "ollama/llama3.2:1b")
+    docker_only = str(data.get("docker_only", "false")).lower() in ("true", "1", "yes")
 
     temp_dir = Path(tempfile.mkdtemp(prefix="scannex_demo_"))
     shutil.copytree(benchmark_dir, temp_dir, dirs_exist_ok=True)
@@ -285,7 +289,7 @@ def demo_scan():
 
     thread = threading.Thread(
         target=run_scan_async,
-        args=(session_id, temp_dir, mock_mode, model_name),
+        args=(session_id, temp_dir, mock_mode, model_name, docker_only),
         daemon=True,
     )
     thread.start()

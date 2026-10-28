@@ -38,14 +38,15 @@ def main():
 
 @main.command()
 @click.argument("target", default=".", type=click.Path(exists=True, file_okay=True, dir_okay=True))
-@click.option("--mock/--no-mock", default=None, help="Force offline mock mode for zero-key execution")
+@click.option("--mock/--no-mock", default=False, help="Use offline mock mode — no API key needed")
+@click.option("--dockeronly", is_flag=True, default=False, help="Abort immediately if Docker is unavailable (no subprocess fallback)")
 @click.option("--model", default=None, help="LLM model (e.g. gemini/gemini-2.5-flash, ollama/codellama)")
 @click.option("--sarif", default="scannex-report.sarif", help="Path for SARIF 2.1.0 export")
 @click.option("--markdown", default="scannex-report.md", help="Path for Markdown report export")
 @click.option("--html", default="scannex-report.html", help="Path for HTML report export")
 @click.option("--db", default=".scannex/findings.db", help="SQLite findings store path")
 @click.option("--concurrency", default=2, type=int, help="Max parallel sandboxes")
-def scan(target, mock, model, sarif, markdown, html, db, concurrency):
+def scan(target, mock, dockeronly, model, sarif, markdown, html, db, concurrency):
     """Scan a target repository or file with ScanneX."""
     ui.print_banner()
 
@@ -53,8 +54,8 @@ def scan(target, mock, model, sarif, markdown, html, db, concurrency):
     console.print(f"[bold cyan]Scanning target:[/bold cyan] {target_path}\n")
 
     config = ScannexConfig.from_env()
-    if mock is not None:
-        config.mock_mode = mock
+    config.mock_mode = mock
+    config.docker_only = dockeronly
     if model:
         config.model_name = model
     config.db_path = Path(db)
@@ -106,10 +107,12 @@ def scan(target, mock, model, sarif, markdown, html, db, concurrency):
 
 
 @main.command()
+@click.option("--mock/--no-mock", default=False, help="Use offline mock mode — no API key needed")
+@click.option("--dockeronly", is_flag=True, default=False, help="Abort immediately if Docker is unavailable (no subprocess fallback)")
 @click.option("--sarif", default="scannex-demo-report.sarif", help="Path for SARIF export")
 @click.option("--markdown", default="scannex-demo-report.md", help="Path for Markdown report")
 @click.option("--html", default="scannex-demo-report.html", help="Path for HTML report")
-def demo(sarif, markdown, html):
+def demo(mock, dockeronly, sarif, markdown, html):
     """Run retrospective verification demo on bundled vulnerable benchmark application."""
     ui.print_banner()
 
@@ -118,7 +121,8 @@ def demo(sarif, markdown, html):
     console.print(f"  Target: [cyan]{benchmark_dir}[/cyan]\n")
 
     config = ScannexConfig(
-        mock_mode=True,  # Built-in offline deterministic verification for zero-key judging
+        mock_mode=mock,
+        docker_only=dockeronly,
         db_path=Path(".scannex/demo_findings.db"),
         max_concurrency=2,
     )

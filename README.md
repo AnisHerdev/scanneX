@@ -163,6 +163,83 @@ python -m pytest tests/ -v
 
 ---
 
+## How to Run This Project
+
+### 1. Install
+
+```bash
+git clone https://github.com/Hackfest-X-Saividya/gravitas-t2-13.git
+cd gravitas-t2-13
+uv venv .venv && source .venv/bin/activate   # or .\.venv\Scripts\activate on Windows
+uv pip install -e .
+```
+
+### 2. Demo — fastest path (offline, no API key, no Docker required)
+
+```bash
+python -m scannex.cli demo --mock
+```
+
+Scans the bundled vulnerable benchmark app with deterministic mock probes. Prints a rich terminal table of findings, syntax-highlighted diffs, and writes `scannex-demo-report.sarif`.
+
+### 3. Demo with Docker sandbox (prove exploits live)
+
+Docker must be running. The sandbox uses a subprocess fallback automatically if Docker is unavailable — unless you pass `--dockeronly`.
+
+```bash
+python -m scannex.cli demo --mock
+```
+
+### 4. Full version — enforce Docker (no fallback)
+
+Use `--dockeronly` when you want the scan to abort with a clear error rather than silently downgrade to subprocess mode if Docker is not available:
+
+```bash
+python -m scannex.cli demo --mock --dockeronly
+```
+
+Or on your own codebase:
+
+```bash
+python -m scannex.cli scan /path/to/project --mock --dockeronly
+```
+
+### 5. Scan with a real LLM
+
+No `--mock` flag — set `GEMINI_API_KEY` or start Ollama locally:
+
+```bash
+# Gemini
+export GEMINI_API_KEY="your-key"
+python -m scannex.cli scan /path/to/project
+
+# Ollama (local)
+ollama pull llama3.2
+python -m scannex.cli scan /path/to/project --model ollama/llama3.2
+```
+
+### 6. Interactive Web Dashboard
+
+```bash
+python -m scannex.cli dashboard
+# opens http://127.0.0.1:8080/
+```
+
+**Dashboard controls:**
+
+| Control | Description |
+|---|---|
+| **Simulation / Mock** toggle | Offline deterministic mode — no API key needed |
+| **Local LLM (Ollama)** toggle | Uses a locally-running Ollama model; auto-discovers installed models |
+| **Online (Gemini)** toggle | Uses Google Gemini API (requires `GEMINI_API_KEY` on the server) |
+| **Docker-only sandbox** checkbox | When checked, aborts the scan if Docker is unavailable instead of falling back to subprocess |
+| ZIP drop / GitHub URL | Upload a repo ZIP or paste a GitHub URL to scan any codebase |
+| Run Benchmark CVE Demo | One-click scan of the bundled vulnerable app using the selected mode |
+
+Full version with Docker-only enforced via the dashboard: check **Docker-only sandbox** before clicking "Run Benchmark CVE Demo" or scanning a repo.
+
+---
+
 ## Team Gravitas (T2-13)
 - Built for HackFest 2026.
 - Architecture credit: Find-Prove-Fix pattern and Cloudflare finder/verifier inspiration.
