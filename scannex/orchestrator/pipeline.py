@@ -16,10 +16,17 @@ from scannex.scanner.semgrep_runner import SemgrepRunner
 
 class PipelineEvent:
     """Status callback event for terminal UI updates."""
-    def __init__(self, stage: str, message: str, finding: Optional[Finding] = None):
+    def __init__(
+        self,
+        stage: str,
+        message: str,
+        finding: Optional[Finding] = None,
+        metadata: Optional[dict] = None,
+    ):
         self.stage = stage
         self.message = message
         self.finding = finding
+        self.metadata = metadata or {}
 
 
 class ScannexOrchestrator:
@@ -44,9 +51,15 @@ class ScannexOrchestrator:
         self.verifier_agent = VerifierAgent(self.target_dir, self.config)
         self.patch_agent = SpeculativePatchAgent(self.target_dir, self.config)
 
-    def _emit(self, stage: str, message: str, finding: Optional[Finding] = None) -> None:
+    def _emit(
+        self,
+        stage: str,
+        message: str,
+        finding: Optional[Finding] = None,
+        metadata: Optional[dict] = None,
+    ) -> None:
         """Notify UI listeners of pipeline progress."""
-        self.event_callback(PipelineEvent(stage, message, finding))
+        self.event_callback(PipelineEvent(stage, message, finding, metadata))
 
     async def run(self) -> list[Finding]:
         """Execute the end-to-end autonomous AppSec pipeline."""
@@ -120,7 +133,7 @@ class ScannexOrchestrator:
             sandbox = SandboxExecutor(
                 self.target_dir,
                 self.config,
-                event_callback=lambda stage, msg: self._emit(stage, msg, finding),
+                event_callback=lambda stage, msg, meta=None: self._emit(stage, msg, finding, meta),
             )
             try:
                 # Concurrent launch: don't wait for sandbox boot before generating patch!

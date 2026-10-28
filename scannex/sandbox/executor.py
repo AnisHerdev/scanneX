@@ -27,15 +27,17 @@ class SandboxExecutor:
         self,
         target_dir: Path | str,
         config: Optional[ScannexConfig] = None,
-        event_callback: Optional[Callable[[str, str], None]] = None,
+        event_callback: Optional[Callable[[str, str, Optional[dict]], None]] = None,
     ):
         self.target_dir = Path(target_dir).resolve()
         self.config = config or ScannexConfig.from_env()
         self.oracle = DeterministicOracle()
-        self.event_callback = event_callback or (lambda stage, msg: None)
+        self.event_callback = event_callback or (lambda stage, msg, meta=None: None)
         self.sandbox_dir: Optional[Path] = None
         self.process: Optional[subprocess.Popen] = None
         self.container_name: Optional[str] = None
+        self.container_id: Optional[str] = None
+        self.pid: Optional[int] = None
         self.port: int = 0
         self.base_url: str = ""
         self.sandbox_type: str = "subprocess"
@@ -121,10 +123,35 @@ except Exception:
         if res.returncode != 0:
             raise RuntimeError(f"Docker run failed: {res.stderr}")
 
+        self.container_id = res.stdout.strip()[:12] if res.stdout else self.container_name
+
+        # Query host PID via docker inspect
+        try:
+            p_res = subprocess.run(
+                ["docker", "inspect", "--format", "{{.State.Pid}}", self.container_name],
+                capture_output=True,
+                text=True,
+                timeout=3,
+            )
+            if p_res.returncode == 0 and p_res.stdout.strip().isdigit():
+                self.pid = int(p_res.stdout.strip())
+        except Exception:
+            self.pid = None
+
         await self._wait_for_ready()
+
+        metadata = {
+            "sandbox_id": self.container_name,
+            "sandbox_type": "docker",
+            "container_id": self.container_id,
+            "pid": self.pid,
+            "port": self.port,
+            "action": "created",
+        }
         self.event_callback(
             "DOCKER_SANDBOX",
-            f"Booted container '{self.container_name}' (Image: scannex-sandbox-base:latest) on port {self.port}",
+            f"Booted container '{self.container_name}' (ID: {self.container_id}, Host PID: {self.pid or 'N/A'}) on port {self.port}",
+            metadata,
         )
 
     async def _start_subprocess(self, entrypoint: Path) -> None:
@@ -145,8 +172,22 @@ except Exception:
             stderr=subprocess.PIPE,
         )
 
+        self.pid = self.process.pid if self.process else None
         await self._wait_for_ready()
-        self.event_callback("SUBPROCESS_SANDBOX", f"Booted subprocess sandbox on port {self.port}")
+
+        metadata = {
+            "sandbox_id": f"proc_{self.port}",
+            "sandbox_type": "subprocess",
+            "container_id": None,
+            "pid": self.pid,
+            "port": self.port,
+            "action": "created",
+        }
+        self.event_callback(
+            "SUBPROCESS_SANDBOX",
+            f"Booted subprocess sandbox (PID: {self.pid}) on port {self.port}",
+            metadata,
+        )
 
     def _find_entrypoint(self) -> Optional[Path]:
         """Locate primary application file."""
@@ -267,7 +308,15 @@ except Exception:
             # Hot-restart Docker container with mounted patched code
             subprocess.run(["docker", "restart", self.container_name], check=True, capture_output=True, timeout=10)
             await self._wait_for_ready()
-            self.event_callback("DOCKER_SANDBOX", f"Hot-restarted container '{self.container_name}' with patched code")
+            metadata = {
+                "sandbox_id": self.container_name,
+                "sandbox_type": "docker",
+                "container_id": self.container_id,
+                "pid": self.pid,
+                "port": self.port,
+                "action": "restarted",
+            }
+            self.event_callback("DOCKER_SANDBOX", f"Hot-restarted container '{self.container_name}' with patched code", metadata)
         else:
             self.stop_process()
             self.port = self.find_free_port()
@@ -286,6 +335,7 @@ except Exception:
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                 )
+                self.pid = self.process.pid if self.process else None
                 await self._wait_for_ready()
 
         # Re-fire probe!
@@ -314,12 +364,27 @@ except Exception:
         """Cleanly shutdown sandbox container or process and remove ephemeral directory."""
         if self.container_name:
             c_name = self.container_name
+            c_id = self.container_id
+            c_pid = self.pid
             try:
                 subprocess.run(["docker", "rm", "-f", self.container_name], capture_output=True, timeout=5)
             except Exception:
                 pass
-            self.event_callback("DOCKER_SANDBOX", f"Cleanly stopped & removed container '{c_name}'")
+            metadata = {
+                "sandbox_id": c_name,
+                "sandbox_type": "docker",
+                "container_id": c_id,
+                "pid": c_pid,
+                "action": "deleted",
+            }
+            self.event_callback(
+                "DOCKER_SANDBOX",
+                f"Cleanly stopped & removed container '{c_name}' (ID: {c_id}, PID: {c_pid or 'N/A'})",
+                metadata,
+            )
             self.container_name = None
+            self.container_id = None
+            self.pid = None
 
         self.stop_process()
         if self.sandbox_dir and self.sandbox_dir.exists():

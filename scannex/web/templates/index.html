@@ -652,6 +652,106 @@
       border-radius: 50%;
     }
 
+    /* Live Sandbox Monitor */
+    .sandbox-monitor {
+      background-color: #0b1322;
+      border: 1px solid rgba(14, 165, 233, 0.3);
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin-bottom: 14px;
+    }
+
+    .sandbox-monitor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .sandbox-monitor-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: 0.02em;
+    }
+
+    .sandbox-monitor-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .sandbox-instances-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .sandbox-card {
+      background-color: #080d17;
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 180ms ease;
+    }
+
+    .sandbox-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sandbox-name {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+
+    .sandbox-meta-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px 14px;
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .sandbox-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .sandbox-meta-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+
+    .sandbox-meta-val {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .sandbox-meta-val.pid-badge {
+      color: #34d399;
+    }
+
     /* Terminal Console Event Feed */
     .event-log {
       background-color: var(--bg-terminal);
@@ -1168,6 +1268,19 @@
           </button>
         </div>
       </div>
+      <!-- Live Sandbox / Container Monitor -->
+      <div id="sandbox-monitor" class="sandbox-monitor" style="display: none;">
+        <div class="sandbox-monitor-header">
+          <div class="sandbox-monitor-title">
+            <span class="live-indicator-dot"></span>
+            <span>Live Sandbox Instances</span>
+            <span class="badge badge-dynamic" id="sandbox-count-badge">0 Active</span>
+          </div>
+          <span class="sandbox-monitor-hint">Containers are dynamically created for canary verification and destroyed upon completion.</span>
+        </div>
+        <div id="sandbox-instances-grid" class="sandbox-instances-grid"></div>
+      </div>
+
       <div class="event-log" id="event-log" role="log" aria-live="polite"></div>
     </div>
 
@@ -1558,6 +1671,11 @@
       document.getElementById('target-title').innerText = `Scanning: ${targetName}`;
       document.getElementById('event-log').innerHTML = '';
 
+      const sbMonitor = document.getElementById('sandbox-monitor');
+      if (sbMonitor) sbMonitor.style.display = 'none';
+      const sbGrid = document.getElementById('sandbox-instances-grid');
+      if (sbGrid) sbGrid.innerHTML = '';
+
       if (pollInterval) clearInterval(pollInterval);
       pollInterval = setInterval(pollStatus, 1000);
       pollStatus();
@@ -1577,6 +1695,69 @@
         .then(data => {
           if (!data) return;
           document.getElementById('current-stage-tag').innerText = data.current_stage || 'RUNNING';
+
+          // Render Live Sandbox Monitor
+          const sbMonitor = document.getElementById('sandbox-monitor');
+          const sbGrid = document.getElementById('sandbox-instances-grid');
+          const sbBadge = document.getElementById('sandbox-count-badge');
+          const sandboxes = data.active_sandboxes || [];
+
+          if (sandboxes.length > 0) {
+            sbMonitor.style.display = 'block';
+            sbBadge.className = 'badge badge-fixed';
+            sbBadge.innerText = `${sandboxes.length} Active Container${sandboxes.length > 1 ? 's' : ''}`;
+
+            sbGrid.innerHTML = sandboxes.map(s => {
+              const typeBadge = s.type === 'docker' ? '🐳 DOCKER' : '⚙️ SUBPROCESS';
+              const pidDisplay = s.pid ? s.pid : 'N/A';
+              const cidDisplay = s.container_id ? s.container_id : 'Local Process';
+              const portDisplay = s.port ? `Host :${s.port} ➔ Cont :5000` : 'Dynamic';
+              const target = s.vuln_type ? `[${s.vuln_type}]` : 'Canary Proving';
+
+              return `
+                <div class="sandbox-card" id="sandbox-card-${escapeHtml(s.id)}">
+                  <div class="sandbox-card-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span class="badge badge-dynamic">${typeBadge}</span>
+                      <span class="sandbox-name">${escapeHtml(s.id)}</span>
+                    </div>
+                    <span class="badge badge-fixed">RUNNING</span>
+                  </div>
+                  <div class="sandbox-meta-row">
+                    <div class="sandbox-meta-item">
+                      <span class="sandbox-meta-label">Container ID</span>
+                      <span class="sandbox-meta-val">${escapeHtml(cidDisplay)}</span>
+                    </div>
+                    <div class="sandbox-meta-item">
+                      <span class="sandbox-meta-label">Host PID</span>
+                      <span class="sandbox-meta-val pid-badge">${escapeHtml(String(pidDisplay))}</span>
+                    </div>
+                    <div class="sandbox-meta-item">
+                      <span class="sandbox-meta-label">Port Mapping</span>
+                      <span class="sandbox-meta-val">${escapeHtml(portDisplay)}</span>
+                    </div>
+                    <div class="sandbox-meta-item">
+                      <span class="sandbox-meta-label">Target Audit</span>
+                      <span class="sandbox-meta-val" style="color: #facc15;">${escapeHtml(target)}</span>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('');
+          } else {
+            if (data.status === 'completed' || (data.events && data.events.some(e => e.stage === 'DOCKER_SANDBOX' && e.message.includes('Cleanly stopped')))) {
+              sbMonitor.style.display = 'block';
+              sbBadge.className = 'badge badge-static';
+              sbBadge.innerText = 'Cleaned Up (0 Active)';
+              sbGrid.innerHTML = `
+                <div style="font-size: 12px; color: var(--text-muted); font-style: italic; padding: 4px 2px;">
+                  All ephemeral Docker sandboxes were safely stopped and removed (<code style="color: #94a3b8; font-size: 11px;">docker rm -f</code>) upon canary verification completion.
+                </div>
+              `;
+            } else {
+              sbMonitor.style.display = 'none';
+            }
+          }
 
           // Update event feed
           const log = document.getElementById('event-log');

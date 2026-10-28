@@ -36,8 +36,27 @@ def run_scan_async(session_id: str, target_dir: Path, mock_mode: bool, model_nam
     session = sessions[session_id]
     session["status"] = "running"
     session["events"] = []
+    session["active_sandboxes"] = []
 
     def event_handler(ev: PipelineEvent):
+        if ev.metadata and ev.metadata.get("action") == "created":
+            sb_entry = {
+                "id": ev.metadata.get("sandbox_id"),
+                "type": ev.metadata.get("sandbox_type", "docker"),
+                "container_id": ev.metadata.get("container_id"),
+                "pid": ev.metadata.get("pid"),
+                "port": ev.metadata.get("port"),
+                "vuln_type": ev.finding.vuln_type if ev.finding else None,
+            }
+            session["active_sandboxes"] = [
+                s for s in session.get("active_sandboxes", []) if s["id"] != sb_entry["id"]
+            ] + [sb_entry]
+        elif ev.metadata and ev.metadata.get("action") == "deleted":
+            target_id = ev.metadata.get("sandbox_id")
+            session["active_sandboxes"] = [
+                s for s in session.get("active_sandboxes", []) if s["id"] != target_id
+            ]
+
         session["events"].append({
             "stage": ev.stage,
             "message": ev.message,
@@ -309,6 +328,7 @@ def scan_status(session_id: str):
         "target_name": session.get("target_name"),
         "status": session["status"],
         "current_stage": session.get("current_stage", "QUEUED"),
+        "active_sandboxes": session.get("active_sandboxes", []),
         "events": session["events"],
         "findings": session["findings"],
         "error": session["error"],
