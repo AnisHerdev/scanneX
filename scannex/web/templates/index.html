@@ -45,6 +45,8 @@
       --text-primary: #1b2420;            /* Deep forest-charcoal (14.8:1 contrast) */
       --text-secondary: #4d5b53;          /* Mid forest-slate (6.2:1 contrast) */
       --text-muted: #6f8076;              /* Muted text (4.5:1 contrast) */
+      --text-action: #116329;             /* Accessible high-contrast green text (7.2:1 on canvas, 6.5:1 on elevated) */
+      --text-action-hover: #0c4a1e;
 
       /* GitHub Solid Green Primary Accent */
       --accent-primary: #1f883d;
@@ -139,6 +141,19 @@
       --text-primary: #f0f6fc;            /* GitHub dark high contrast (14.1:1) */
       --text-secondary: #8b949e;          /* GitHub dark mid text (6.4:1) */
       --text-muted: #6e7681;              /* GitHub dark muted (4.5:1) */
+      --text-action: #3fb950;             /* Accessible green text in dark mode (7.3:1 contrast) */
+      --text-action-hover: #56d364;
+
+      /* Optical dark-mode perceptual compensation */
+      --track-tighter: -0.015em;
+      --track-tight: -0.005em;
+      --track-normal: 0.01em;
+      --track-wide: 0.045em;
+      --track-wider: 0.065em;
+      --lh-tight: 1.28;
+      --lh-snug: 1.38;
+      --lh-normal: 1.55;
+      --lh-relaxed: 1.68;
 
       /* GitHub Solid Green Primary Accent (Dark) */
       --accent-primary: #238636;
@@ -214,8 +229,49 @@
     }
 
     :root {
-      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+      /* Live-mode signature parameter contract */
+      --p-scale: 1;
+
+      /* Primary System Font Stacks */
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", -apple-system-subheadline, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
       --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+      /* Typographic Scale authored against --p-scale */
+      --font-size-2xs: calc(0.6875rem * var(--p-scale)); /* 11px */
+      --font-size-xs:  calc(0.75rem * var(--p-scale));   /* 12px */
+      --font-size-sm:  calc(0.8125rem * var(--p-scale)); /* 13px */
+      --font-size-base: calc(0.875rem * var(--p-scale)); /* 14px */
+      --font-size-md:  calc(1rem * var(--p-scale));      /* 16px */
+      --font-size-lg:  calc(1.125rem * var(--p-scale));  /* 18px */
+      --font-size-xl:  calc(1.3125rem * var(--p-scale)); /* 21px */
+      --font-size-2xl: calc(1.75rem * var(--p-scale));   /* 28px */
+
+      /* Leading (Line Heights) */
+      --lh-none: 1;
+      --lh-tight: 1.25;
+      --lh-snug: 1.35;
+      --lh-normal: 1.5;
+      --lh-relaxed: 1.62;
+
+      /* Tracking (Letter Spacing) */
+      --track-tighter: -0.025em;
+      --track-tight: -0.012em;
+      --track-normal: 0;
+      --track-wide: 0.035em;
+      --track-wider: 0.055em;
+
+      /* Font Weights */
+      --fw-regular: 400;
+      --fw-medium: 500;
+      --fw-semibold: 600;
+      --fw-bold: 700;
+
+      /* Reading Measures */
+      --measure-prose: 68ch;
+      --measure-compact: 52ch;
+
+      /* Underline offset */
+      --underline-offset: 3px;
     }
 
     * {
@@ -228,11 +284,37 @@
       background-color: var(--bg-canvas);
       color: var(--text-primary);
       font-family: var(--font-sans);
-      font-size: 14px;
-      line-height: 1.5;
+      font-size: var(--font-size-base);
+      line-height: var(--lh-normal);
+      letter-spacing: var(--track-normal);
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
       padding-bottom: 80px;
+      caret-color: var(--accent-primary);
       transition: background-color 200ms ease, color 200ms ease;
+    }
+
+    /* Tabular Numerals for Numerical & Temporal Data */
+    .metric-value,
+    .sandbox-meta-val,
+    .nav-meta,
+    .findings-table th,
+    .findings-table td,
+    .rules-count-badge,
+    .badge,
+    .event-stage,
+    .finding-location,
+    code {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
+    }
+
+    /* Standardized Underline Offset */
+    a,
+    .rules-quick-btn {
+      text-underline-offset: var(--underline-offset);
     }
 
     /* Browser Surfaces Theming */
@@ -299,29 +381,35 @@
     }
 
     .brand-title {
-      font-size: 16px;
-      font-weight: 600;
-      letter-spacing: -0.01em;
+      font-size: var(--font-size-md);
+      font-weight: var(--fw-semibold);
+      letter-spacing: var(--track-tight);
+      line-height: var(--lh-tight);
       color: var(--text-primary);
+      text-wrap: balance;
     }
 
     .brand-tag {
-      font-size: 11px;
-      font-weight: 600;
+      font-size: var(--font-size-2xs);
+      font-weight: var(--fw-semibold);
       background: var(--bg-surface-elevated);
       color: var(--text-secondary);
       border: 1px solid var(--border-subtle);
       padding: 2px 8px;
       border-radius: 12px;
+      letter-spacing: var(--track-wide);
+      text-transform: uppercase;
       transition: all 200ms ease;
     }
 
     .nav-meta {
-      font-size: 12px;
+      font-size: var(--font-size-xs);
+      font-weight: var(--fw-medium);
       color: var(--text-secondary);
       display: flex;
       align-items: center;
       gap: 14px;
+      letter-spacing: var(--track-normal);
     }
 
     .nav-meta-divider {
@@ -338,8 +426,9 @@
       border: 1px solid var(--btn-sec-border);
       padding: 5px 11px;
       border-radius: 6px;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: var(--font-size-xs);
+      font-weight: var(--fw-medium);
+      letter-spacing: var(--track-normal);
       cursor: pointer;
       box-shadow: 0 1px 0 rgba(27, 31, 36, 0.04);
       transition: all 150ms ease;
@@ -366,8 +455,9 @@
       gap: 12px;
       padding: 10px 16px;
       border-radius: 6px;
-      font-size: 13px;
-      font-weight: 500;
+      font-size: var(--font-size-sm);
+      font-weight: var(--fw-medium);
+      line-height: var(--lh-snug);
       margin-bottom: 20px;
       border: 1px solid transparent;
       animation: flash-enter 180ms ease-out;
@@ -388,6 +478,12 @@
       background-color: var(--flash-warn-bg);
       border-color: var(--flash-warn-border);
       color: var(--flash-warn-text);
+    }
+
+    .flash-banner.flash-info {
+      background-color: var(--bg-surface-elevated);
+      border-color: var(--border-subtle);
+      color: var(--text-primary);
     }
 
     .flash-content {
@@ -428,16 +524,21 @@
     }
 
     .card-title {
-      font-size: 16px;
-      font-weight: 600;
-      letter-spacing: -0.01em;
-      margin-bottom: 4px;
+      font-size: var(--font-size-xl);
+      font-weight: var(--fw-semibold);
+      letter-spacing: var(--track-tight);
+      line-height: var(--lh-snug);
+      margin-bottom: 6px;
       color: var(--text-primary);
+      text-wrap: balance;
     }
 
     .card-description {
-      font-size: 13px;
+      font-size: var(--font-size-sm);
+      line-height: var(--lh-normal);
       color: var(--text-secondary);
+      max-width: var(--measure-prose);
+      text-wrap: pretty;
     }
 
     /* Segmented Navigation Tabs */
@@ -455,8 +556,10 @@
       background: transparent;
       border: 1px solid transparent;
       color: var(--text-secondary);
-      font-size: 13px;
-      font-weight: 500;
+      font-size: var(--font-size-sm);
+      font-weight: var(--fw-medium);
+      letter-spacing: var(--track-normal);
+      line-height: var(--lh-none);
       padding: 6px 14px;
       border-radius: 5px;
       cursor: pointer;
@@ -474,8 +577,37 @@
       background-color: var(--bg-surface);
       border-color: var(--border-subtle);
       color: var(--text-primary);
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Segmented LLM Mode Toggle Buttons */
+    .mode-seg-btn {
+      background: var(--btn-sec-bg);
+      color: var(--text-secondary);
+      border: none;
+      border-right: 1px solid var(--border-strong);
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: var(--font-size-xs);
+      font-weight: var(--fw-medium);
+      letter-spacing: var(--track-normal);
+      font-family: inherit;
+      transition: all 140ms ease;
+    }
+
+    .mode-seg-btn:last-child {
+      border-right: none;
+    }
+
+    .mode-seg-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .mode-seg-btn.active {
+      background: var(--bg-surface-elevated);
+      color: var(--text-primary);
+      font-weight: var(--fw-semibold);
     }
 
     /* Dropzone Empty State */
@@ -506,15 +638,19 @@
     }
 
     .dropzone-text {
-      font-size: 14px;
-      font-weight: 600;
+      font-size: var(--font-size-base);
+      font-weight: var(--fw-semibold);
+      letter-spacing: var(--track-tight);
       color: var(--text-primary);
       margin-bottom: 4px;
+      text-wrap: balance;
     }
 
     .dropzone-sub {
-      font-size: 12px;
+      font-size: var(--font-size-xs);
+      line-height: var(--lh-normal);
       color: var(--text-secondary);
+      text-wrap: pretty;
     }
 
     /* Form Controls */
@@ -530,8 +666,10 @@
       border-radius: 6px;
       color: var(--text-primary);
       padding: 8px 14px;
-      font-size: 13px;
+      font-size: var(--font-size-sm);
       font-family: var(--font-sans);
+      line-height: var(--lh-normal);
+      letter-spacing: var(--track-normal);
       outline: none;
       box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
       transition: border-color 150ms ease, box-shadow 150ms ease;
@@ -546,8 +684,10 @@
     .btn {
       background-color: var(--accent-primary);
       color: var(--accent-primary-text);
-      font-weight: 600;
-      font-size: 13px;
+      font-weight: var(--fw-semibold);
+      font-size: var(--font-size-sm);
+      letter-spacing: var(--track-normal);
+      line-height: var(--lh-none);
       padding: 8px 16px;
       border-radius: 6px;
       border: 1px solid rgba(27, 31, 36, 0.15);
@@ -589,8 +729,8 @@
 
     .btn-sm {
       padding: 4px 10px;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: var(--font-size-xs);
+      font-weight: var(--fw-medium);
     }
 
     .spinner {
@@ -608,7 +748,7 @@
       margin-top: 20px;
       padding-top: 18px;
       border-top: 1px solid var(--border-subtle);
-      font-size: 12px;
+      font-size: var(--font-size-xs);
       color: var(--text-secondary);
     }
 
@@ -619,7 +759,8 @@
     }
 
     .select-label {
-      font-weight: 500;
+      font-size: var(--font-size-xs);
+      font-weight: var(--fw-semibold);
       color: var(--text-secondary);
     }
 
@@ -627,7 +768,8 @@
       background-color: var(--bg-surface);
       border: 1px solid var(--border-strong);
       color: var(--text-primary);
-      font-size: 12px;
+      font-size: var(--font-size-xs);
+      font-family: var(--font-sans);
       padding: 6px 10px;
       border-radius: 6px;
       outline: none;
@@ -667,32 +809,35 @@
     }
 
     .rules-title {
-      font-size: 12px;
-      font-weight: 600;
+      font-size: var(--font-size-xs);
+      font-weight: var(--fw-semibold);
+      letter-spacing: var(--track-tight);
       color: var(--text-primary);
+      text-wrap: balance;
     }
 
     .rules-header-right {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 11px;
+      font-size: var(--font-size-2xs);
     }
 
     .rules-quick-btn {
       background: none;
       border: none;
-      color: var(--accent-primary);
-      font-size: 11px;
-      font-weight: 500;
+      color: var(--text-action);
+      font-size: var(--font-size-2xs);
+      font-weight: var(--fw-medium);
       cursor: pointer;
       padding: 0;
       text-decoration: underline;
-      text-underline-offset: 2px;
+      text-underline-offset: var(--underline-offset);
+      transition: color 140ms ease;
     }
 
     .rules-quick-btn:hover {
-      color: var(--accent-primary-hover);
+      color: var(--text-action-hover);
     }
 
     .rules-grid {
@@ -736,18 +881,21 @@
       display: flex;
       flex-direction: column;
       gap: 2px;
-      line-height: 1.3;
+      line-height: var(--lh-snug);
     }
 
     .rule-name {
-      font-size: 12px;
-      font-weight: 600;
+      font-size: var(--font-size-xs);
+      font-weight: var(--fw-semibold);
+      letter-spacing: var(--track-tight);
       color: var(--text-primary);
     }
 
     .rule-desc {
-      font-size: 11px;
+      font-size: var(--font-size-2xs);
+      line-height: var(--lh-snug);
       color: var(--text-secondary);
+      text-wrap: pretty;
     }
 
     /* Live Progress & Status Panel */
@@ -772,15 +920,16 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 11px;
-      font-weight: 700;
+      font-size: var(--font-size-2xs);
+      font-weight: var(--fw-bold);
       color: var(--badge-fixed-text);
       background: var(--badge-fixed-bg);
       border: 1px solid var(--badge-fixed-border);
       padding: 2px 8px;
       border-radius: 12px;
       margin-right: 8px;
-      letter-spacing: 0.04em;
+      letter-spacing: var(--track-wider);
+      text-transform: uppercase;
     }
 
     .live-indicator-dot {
@@ -812,16 +961,20 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 13px;
-      font-weight: 700;
+      font-size: var(--font-size-sm);
+      font-weight: var(--fw-bold);
       color: var(--text-primary);
-      letter-spacing: 0.02em;
+      letter-spacing: var(--track-tight);
+      text-wrap: balance;
     }
 
     .sandbox-monitor-hint {
-      font-size: 12px;
+      font-size: var(--font-size-xs);
+      line-height: var(--lh-normal);
       color: var(--sb-hint-color);
-      font-weight: 500;
+      font-weight: var(--fw-regular);
+      max-width: var(--measure-prose);
+      text-wrap: pretty;
     }
 
     .sandbox-instances-grid {
@@ -850,8 +1003,8 @@
 
     .sandbox-name {
       font-family: var(--font-mono);
-      font-size: 13px;
-      font-weight: 600;
+      font-size: var(--font-size-xs);
+      font-weight: var(--fw-semibold);
       color: var(--sb-name-color);
     }
 
@@ -872,18 +1025,20 @@
     }
 
     .sandbox-meta-label {
-      font-size: 11px;
-      font-weight: 700;
+      font-size: var(--font-size-2xs);
+      font-weight: var(--fw-bold);
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: var(--track-wider);
       color: var(--sb-meta-label);
+      line-height: var(--lh-snug);
     }
 
     .sandbox-meta-val {
       font-family: var(--font-mono);
       font-variant-numeric: tabular-nums;
-      font-size: 13px;
-      font-weight: 600;
+      font-feature-settings: "tnum" 1;
+      font-size: var(--font-size-xs);
+      font-weight: var(--fw-semibold);
       color: var(--sb-meta-val);
     }
 
@@ -902,11 +1057,13 @@
       border-radius: 6px;
       padding: 14px 16px;
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: var(--font-size-xs);
       color: #c9d1d9;
       max-height: 220px;
       overflow-y: auto;
-      line-height: 1.6;
+      line-height: var(--lh-relaxed);
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
     }
 
     .event-entry {
@@ -916,28 +1073,28 @@
 
     .event-stage {
       color: #58a6ff;
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
       margin-right: 4px;
     }
 
     .event-canary {
       color: #ff7b72;
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
     }
 
     .event-fixed {
       color: #3fb950;
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
     }
 
     .event-error {
       color: #f85149;
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
     }
 
     .event-extract {
       color: #38bdf8;
-      font-weight: 600;
+      font-weight: var(--fw-semibold);
     }
 
     /* Metrics Summary Cards */
@@ -959,18 +1116,22 @@
     }
 
     .metric-value {
-      font-size: 26px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 2px;
+      font-size: var(--font-size-2xl);
+      font-weight: var(--fw-bold);
+      letter-spacing: var(--track-tighter);
+      line-height: var(--lh-tight);
+      margin-bottom: 4px;
       font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
       color: var(--text-primary);
     }
 
     .metric-label {
-      font-size: 12px;
+      font-size: var(--font-size-xs);
       color: var(--text-secondary);
-      font-weight: 500;
+      font-weight: var(--fw-medium);
+      line-height: var(--lh-snug);
+      text-wrap: balance;
     }
 
     /* Findings Table */
@@ -992,6 +1153,14 @@
       background-color: var(--bg-surface);
     }
 
+    .table-header-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--fw-semibold);
+      letter-spacing: var(--track-tight);
+      color: var(--text-primary);
+      text-wrap: balance;
+    }
+
     .table-scroll-wrapper {
       overflow-x: auto;
       width: 100%;
@@ -1006,10 +1175,11 @@
     .findings-table th {
       background-color: var(--bg-surface-elevated);
       color: var(--text-secondary);
-      font-size: 11px;
-      font-weight: 600;
+      font-size: var(--font-size-2xs);
+      font-weight: var(--fw-semibold);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: var(--track-wider);
+      line-height: var(--lh-snug);
       padding: 10px 18px;
       border-bottom: 1px solid var(--border-subtle);
     }
@@ -1017,7 +1187,8 @@
     .findings-table td {
       padding: 12px 18px;
       border-bottom: 1px solid var(--border-subtle);
-      font-size: 13px;
+      font-size: var(--font-size-sm);
+      line-height: var(--lh-normal);
       vertical-align: middle;
     }
 
@@ -1054,14 +1225,16 @@
       align-items: center;
       padding: 2px 8px;
       border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
+      font-size: var(--font-size-2xs);
+      font-weight: var(--fw-semibold);
       font-family: var(--font-sans);
       text-transform: uppercase;
-      letter-spacing: 0.03em;
+      letter-spacing: var(--track-wide);
       border: 1px solid transparent;
-      line-height: 1.4;
+      line-height: 1.35;
       white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
     }
 
     .badge-fixed {
@@ -1096,9 +1269,9 @@
 
     /* Severity Indicators */
     .severity-tag {
-      font-weight: 700;
-      font-size: 11px;
-      letter-spacing: 0.04em;
+      font-weight: var(--fw-bold);
+      font-size: var(--font-size-2xs);
+      letter-spacing: var(--track-wider);
     }
 
     .sev-CRITICAL { color: var(--sev-critical); }
@@ -1109,12 +1282,14 @@
     /* Code Tags */
     code {
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: var(--font-size-xs);
       background-color: var(--bg-code);
       padding: 2px 6px;
       border-radius: 4px;
       border: 1px solid var(--border-subtle);
       color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
     }
 
     /* Expandable Detail View & Diff */
@@ -1139,24 +1314,47 @@
     }
 
     .detail-title {
-      font-size: 11px;
-      font-weight: 700;
+      font-size: var(--font-size-2xs);
+      font-weight: var(--fw-bold);
       text-transform: uppercase;
       color: var(--text-secondary);
       margin-bottom: 8px;
-      letter-spacing: 0.04em;
+      letter-spacing: var(--track-wide);
+      line-height: var(--lh-snug);
+    }
+
+    .detail-description {
+      font-size: var(--font-size-xs);
+      line-height: var(--lh-normal);
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      text-wrap: pretty;
+    }
+
+    .detail-oracle-meta {
+      font-size: var(--font-size-xs);
+      line-height: var(--lh-normal);
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .detail-oracle-label {
+      color: var(--text-primary);
+      font-weight: var(--fw-semibold);
     }
 
     pre.code-view {
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: var(--font-size-xs);
       color: var(--text-primary);
       background-color: var(--bg-code);
       padding: 10px 12px;
       border-radius: 6px;
       overflow-x: auto;
       border: 1px solid var(--border-subtle);
-      line-height: 1.5;
+      line-height: var(--lh-normal);
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
     }
 
     .diff-add {
@@ -1187,15 +1385,34 @@
     }
 
     .empty-findings-title {
-      font-size: 15px;
-      font-weight: 600;
+      font-size: var(--font-size-lg);
+      font-weight: var(--fw-semibold);
+      letter-spacing: var(--track-tight);
       color: var(--text-primary);
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      text-wrap: balance;
     }
 
     .empty-findings-sub {
-      font-size: 13px;
+      font-size: var(--font-size-sm);
+      line-height: var(--lh-normal);
       color: var(--text-secondary);
+      max-width: var(--measure-compact);
+      margin-inline: auto;
+      text-wrap: pretty;
+    }
+
+    .finding-vuln-title {
+      font-weight: var(--fw-semibold);
+      color: var(--text-primary);
+      letter-spacing: var(--track-tight);
+    }
+
+    .finding-cwe {
+      font-size: var(--font-size-2xs);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
     }
 
     .export-actions {
@@ -1333,8 +1550,8 @@
               <line x1="12" y1="22.08" x2="12" y2="12"></line>
             </svg>
           </div>
-          <div class="dropzone-text" id="dropzone-label">Drop source code .ZIP archive here, or click to browse</div>
-          <div class="dropzone-sub">Accepts standalone Python/Flask repositories</div>
+          <div class="dropzone-text" id="dropzone-label">Drop repository .ZIP archive here, or click to browse</div>
+          <div class="dropzone-sub">Supports Python, PHP, JavaScript, Go, Java, and GitHub Actions workflows</div>
           <input type="file" id="file-input" accept=".zip" aria-label="Choose ZIP file" style="display: none;" onchange="handleFileSelect(event)" />
         </div>
       </div>
@@ -1361,14 +1578,14 @@
 
           <!-- 3-Way LLM Mode Segmented Toggle -->
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="select-label">Mode:</span>
-            <div id="mode-toggle" style="display: inline-flex; border: 1px solid var(--border-strong); border-radius: 6px; overflow: hidden; font-size: 12px;">
-              <button id="mode-btn-mock" class="mode-seg-btn active" onclick="setLLMMode('mock')" title="Deterministic offline mode — no API key needed" style="background: var(--bg-surface-elevated); color: var(--text-primary); border: none; border-right: 1px solid var(--border-strong); padding: 6px 12px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 140ms;">Simulation / Mock</button>
-              <button id="mode-btn-ollama" class="mode-seg-btn" onclick="setLLMMode('ollama')" title="Use a locally-running Ollama model" style="background: var(--btn-sec-bg); color: var(--text-secondary); border: none; border-right: 1px solid var(--border-strong); padding: 6px 12px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 140ms;">
+            <span class="select-label">Verification Engine:</span>
+            <div id="mode-toggle" style="display: inline-flex; border: 1px solid var(--border-strong); border-radius: 6px; overflow: hidden;">
+              <button id="mode-btn-mock" class="mode-seg-btn active" onclick="setLLMMode('mock')" title="Deterministic offline simulation — no external API key required">Simulation / Mock</button>
+              <button id="mode-btn-ollama" class="mode-seg-btn" onclick="setLLMMode('ollama')" title="Local neural inference via Ollama runtime">
                 Local LLM (Ollama)
-                <span id="ollama-status-badge" class="badge badge-unverified" style="margin-left: 6px; font-size: 10px;">…</span>
+                <span id="ollama-status-badge" class="badge badge-unverified" style="margin-left: 6px;">…</span>
               </button>
-              <button id="mode-btn-gemini" class="mode-seg-btn" onclick="setLLMMode('gemini')" title="Use Google Gemini API (requires GEMINI_API_KEY)" style="background: var(--btn-sec-bg); color: var(--text-secondary); border: none; padding: 6px 12px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 140ms;">Online (Gemini)</button>
+              <button id="mode-btn-gemini" class="mode-seg-btn" onclick="setLLMMode('gemini')" title="Cloud verification via Google Gemini (requires GEMINI_API_KEY)">Online (Gemini)</button>
             </div>
             <!-- Hidden Ollama model detail select, shown when Ollama mode is active -->
             <select id="ollama-model-select" class="select-input" onchange="handleModelChange()" aria-label="Select local Ollama model" style="display: none; max-width: 200px;">
@@ -1385,13 +1602,13 @@
           </div>
 
           <!-- Docker-Only Toggle -->
-          <label id="docker-only-label" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;" title="Abort scan if Docker is unavailable (no subprocess fallback)">
+          <label id="docker-only-label" style="display: inline-flex; align-items: center; gap: 6px; font-size: var(--font-size-xs); font-weight: var(--fw-medium); color: var(--text-secondary); cursor: pointer; user-select: none;" title="Require Docker container for sandbox canaries; aborts if Docker daemon is unreachable">
             <input type="checkbox" id="docker-only-checkbox" onchange="handleDockerOnlyChange()" style="accent-color: var(--accent-primary); width: 14px; height: 14px; cursor: pointer;" />
             Docker-only sandbox
           </label>
 
         </div>
-        <button class="btn btn-secondary" id="btn-demo-scan" onclick="startDemoScan()">
+        <button class="btn btn-secondary" id="btn-demo-scan" onclick="startDemoScan()" title="Execute packaged vulnerable benchmark CVE app and verify fix in sandbox">
           <svg id="icon-demo-scan" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
           </svg>
@@ -1407,7 +1624,7 @@
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
             </svg>
             <span class="rules-title">Static Analyzers &amp; Rule Packs</span>
-            <span class="badge" id="rules-count-badge" style="background: var(--bg-surface-elevated); color: var(--accent-primary); border: 1px solid var(--border-strong); font-size: 11px; padding: 1px 7px;">4 active</span>
+            <span class="badge" id="rules-count-badge" style="background: var(--bg-surface-elevated); color: var(--text-action); border: 1px solid var(--border-strong); padding: 1px 7px;">4 active rules</span>
           </div>
           <div class="rules-header-right">
             <button type="button" class="rules-quick-btn" onclick="setRulesSelection('all')">Select All</button>
@@ -1433,7 +1650,7 @@
             <input type="checkbox" id="rule-php" class="rule-cb" checked onchange="handleRulesChange()" />
             <div class="rule-info">
               <div class="rule-name">PHP Security Suite</div>
-              <div class="rule-desc">PHP sinks: SQLi, command exec, LFI/RFI, and XSS</div>
+              <div class="rule-desc">PHP sinks: SQLi, command execution, and file inclusion</div>
             </div>
           </label>
 
@@ -1442,7 +1659,7 @@
             <input type="checkbox" id="rule-security-audit" class="rule-cb" checked onchange="handleRulesChange()" />
             <div class="rule-info">
               <div class="rule-name">Security Audit (Semgrep)</div>
-              <div class="rule-desc">Comprehensive SAST taint analysis, sinks &amp; cryptographic flaws</div>
+              <div class="rule-desc">Deep SAST taint tracking, unsafe deserialization &amp; cryptographic flaws</div>
             </div>
           </label>
 
@@ -1460,7 +1677,7 @@
             <input type="checkbox" id="rule-workflows" class="rule-cb" onchange="handleRulesChange()" />
             <div class="rule-info">
               <div class="rule-name">CI/CD &amp; Supply Chain</div>
-              <div class="rule-desc">GitHub Actions workflow security, untrusted inputs &amp; script tags</div>
+              <div class="rule-desc">GitHub Actions workflow security, untrusted inputs &amp; script injections</div>
             </div>
           </label>
         </div>
@@ -1508,7 +1725,7 @@
     <div class="metrics-bar" id="metrics-bar" style="display: none;">
       <div class="metric-card">
         <div class="metric-value" id="count-total">0</div>
-        <div class="metric-label">Total Findings</div>
+        <div class="metric-label">Total SAST Alerts</div>
       </div>
       <div class="metric-card">
         <div class="metric-value" id="count-fixed" style="color: var(--badge-fixed-text);">0</div>
@@ -1520,16 +1737,16 @@
       </div>
       <div class="metric-card">
         <div class="metric-value" id="count-unverified" style="color: var(--text-secondary);">0</div>
-        <div class="metric-label">Unverified Probes</div>
+        <div class="metric-label">Unverified / Exploit Unproven</div>
       </div>
     </div>
 
     <!-- Findings Table & Results -->
     <div class="table-container" id="results-panel" style="display: none;">
       <div class="table-header">
-        <span style="font-weight: 600; font-size: 14px; color: var(--text-primary);">Evidence-Backed Findings</span>
+        <span class="table-header-title">Evidence-Backed Findings</span>
         <div class="export-actions">
-          <button class="btn btn-secondary" onclick="downloadSarif()">
+          <button class="btn btn-secondary" onclick="downloadSarif()" title="Export OASIS SARIF 2.1.0 standard JSON format for CI/CD, GitHub Code Scanning, and VS Code">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
@@ -1537,7 +1754,7 @@
             </svg>
             Download SARIF 2.1.0
           </button>
-          <button class="btn btn-secondary" onclick="downloadMarkdown()">
+          <button class="btn btn-secondary" onclick="downloadMarkdown()" title="Export comprehensive Markdown audit summary with sink traces and patches">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
@@ -1555,10 +1772,10 @@
           <thead>
             <tr>
               <th scope="col" style="width: 120px;">Severity</th>
-              <th scope="col" style="width: 160px;">Status</th>
-              <th scope="col">Vulnerability</th>
-              <th scope="col" style="width: 220px;">Location</th>
-              <th scope="col" style="width: 260px;">Oracle Evidence</th>
+              <th scope="col" style="width: 170px;">Verification Status</th>
+              <th scope="col">Vulnerability &amp; CWE</th>
+              <th scope="col" style="width: 220px;">Sink Location</th>
+              <th scope="col" style="width: 260px;">Canary Oracle Evidence</th>
             </tr>
           </thead>
           <tbody id="findings-tbody"></tbody>
@@ -1628,15 +1845,17 @@
       if (save) localStorage.setItem('scannex-llm-mode', mode);
       const btns = document.querySelectorAll('.mode-seg-btn');
       btns.forEach(b => {
-        b.style.background = 'var(--btn-sec-bg)';
-        b.style.color = 'var(--text-secondary)';
-        b.style.fontWeight = '500';
+        b.classList.remove('active');
+        b.style.background = '';
+        b.style.color = '';
+        b.style.fontWeight = '';
       });
       const active = document.getElementById('mode-btn-' + mode);
       if (active) {
-        active.style.background = 'var(--bg-surface-elevated)';
-        active.style.color = 'var(--text-primary)';
-        active.style.fontWeight = '600';
+        active.classList.add('active');
+        active.style.background = '';
+        active.style.color = '';
+        active.style.fontWeight = '';
       }
       // Show/hide Ollama model picker
       const showOllama = mode === 'ollama';
@@ -1703,7 +1922,7 @@
             select.value = preferred.model_id;
             localStorage.setItem('scannex-model', select.value);
           }
-          if (notifyUser) showAlert(`Discovered ${data.models.length} Ollama models.`, 'warn');
+          if (notifyUser) showAlert(`Connected to Ollama: ${data.models.length} model${data.models.length > 1 ? 's' : ''} available for local verification.`, 'info');
         } else {
           if (badge) { badge.className = 'badge badge-unverified'; badge.innerText = 'offline'; }
           const emptyOpt = document.createElement('option');
@@ -1711,14 +1930,14 @@
           emptyOpt.innerText = 'Ollama offline';
           select.appendChild(emptyOpt);
           if (currentLLMMode === 'ollama') setLLMMode('mock');
-          if (notifyUser) showAlert('Ollama unreachable at http://127.0.0.1:11434. Start Ollama and refresh.', 'error');
+          if (notifyUser) showAlert('Ollama service unreachable at http://127.0.0.1:11434. Verify Ollama is running and click Refresh, or switch to Simulation mode.', 'error');
         }
       } catch (err) {
         if (refreshIcon) refreshIcon.classList.remove('spinner');
         if (badge) { badge.className = 'badge badge-unverified'; badge.innerText = 'offline'; }
         select.innerHTML = '<option disabled>Ollama unreachable</option>';
         if (currentLLMMode === 'ollama') setLLMMode('mock');
-        if (notifyUser) showAlert('Ollama error: ' + err.message, 'error');
+        if (notifyUser) showAlert('Ollama communication error: ' + err.message + '. Please ensure the Ollama daemon is accessible.', 'error');
       }
     }
 
@@ -1796,7 +2015,7 @@
       });
       const badge = document.getElementById('rules-count-badge');
       if (badge) {
-        badge.innerText = `${active} active`;
+        badge.innerText = `${active} active rule${active !== 1 ? 's' : ''}`;
       }
     }
 
@@ -1915,7 +2134,7 @@
     function uploadFile(file) {
       dismissAlert();
       if (!file.name.toLowerCase().endsWith('.zip')) {
-        showAlert('Please upload a valid .ZIP archive containing source code.', 'error');
+        showAlert('Unsupported file format: please upload a .zip archive containing source code.', 'error');
         return;
       }
       document.getElementById('dropzone-label').innerText = `Uploading & analyzing: ${file.name}...`;
@@ -1935,13 +2154,13 @@
           if (data.session_id) {
             initScanTracking(data.session_id, file.name);
           } else {
-            showAlert('Upload failed: ' + (data.error || 'Server error'), 'error');
-            document.getElementById('dropzone-label').innerText = 'Drop source code .ZIP archive here, or click to browse';
+            showAlert('Upload failed: ' + (data.error || 'Server encountered an unexpected error processing archive.'), 'error');
+            document.getElementById('dropzone-label').innerText = 'Drop repository .ZIP archive here, or click to browse';
           }
         })
         .catch(err => {
-          showAlert('Network error communicating with server: ' + err.message, 'error');
-          document.getElementById('dropzone-label').innerText = 'Drop source code .ZIP archive here, or click to browse';
+          showAlert('Network error communicating with server: ' + err.message + '. Please check your connection.', 'error');
+          document.getElementById('dropzone-label').innerText = 'Drop repository .ZIP archive here, or click to browse';
         });
     }
 
@@ -1950,7 +2169,7 @@
       const input = document.getElementById('github-url');
       const url = input.value.trim();
       if (!url) {
-        showAlert('Please enter a valid GitHub repository URL.', 'warn');
+        showAlert('Please enter a valid GitHub repository URL (e.g., https://github.com/owner/repo).', 'warn');
         input.focus();
         return;
       }
@@ -1958,7 +2177,7 @@
       const btn = document.getElementById('btn-clone-scan');
       const txt = document.getElementById('text-clone-scan');
       btn.disabled = true;
-      txt.innerText = 'Cloning & Starting...';
+      txt.innerText = 'Cloning repository & starting scan...';
 
       const config = getEngineConfig();
 
@@ -1982,13 +2201,13 @@
         if (data.session_id) {
           initScanTracking(data.session_id, url);
         } else {
-          showAlert('Clone failed: ' + (data.error || 'Unknown error'), 'error');
+          showAlert('Failed to clone repository: ' + (data.error || 'Verify the repository URL and public accessibility.'), 'error');
         }
       })
       .catch(err => {
         btn.disabled = false;
         txt.innerText = 'Clone & Scan';
-        showAlert('Network error: ' + err.message, 'error');
+        showAlert('Network error cloning repository: ' + err.message + '. Please check your connection.', 'error');
       });
     }
 
@@ -1997,7 +2216,7 @@
       const btn = document.getElementById('btn-demo-scan');
       const txt = document.getElementById('text-demo-scan');
       btn.disabled = true;
-      txt.innerText = 'Launching Sandbox...';
+      txt.innerText = 'Launching benchmark sandbox...';
 
       const config = getEngineConfig();
       fetch('/api/scan/demo', {
@@ -2023,7 +2242,7 @@
       .catch(err => {
         btn.disabled = false;
         txt.innerText = 'Run Benchmark CVE Demo';
-        showAlert('Failed to start benchmark demo: ' + err.message, 'error');
+        showAlert('Failed to launch benchmark CVE demo: ' + err.message + '. Verify sandbox permissions.', 'error');
       });
     }
 
@@ -2114,8 +2333,8 @@
               sbBadge.className = 'badge badge-static';
               sbBadge.innerText = 'Cleaned Up (0 Active)';
               sbGrid.innerHTML = `
-                <div style="font-size: 13px; color: var(--text-secondary); padding: 4px 2px; line-height: 1.5;">
-                  All ephemeral Docker sandboxes were safely stopped and removed (<code style="color: var(--text-primary); background: var(--bg-code); padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: 12px;">docker rm -f</code>) upon canary verification completion.
+                <div class="sandbox-cleanup-notice" style="font-size: var(--font-size-sm); color: var(--text-secondary); padding: 4px 2px; line-height: var(--lh-normal); max-width: var(--measure-prose); text-wrap: pretty;">
+                  All ephemeral Docker sandboxes were safely stopped and removed (<code style="color: var(--text-primary); background: var(--bg-code); padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: var(--font-size-xs);">docker rm -f</code>) upon canary verification completion.
                 </div>
               `;
             } else {
@@ -2174,7 +2393,7 @@
                 </svg>
               </div>
               <div class="empty-findings-title">Zero Vulnerabilities Detected</div>
-              <div class="empty-findings-sub">All AST security checks and dynamic canary sandbox probes passed cleanly.</div>
+              <div class="empty-findings-sub">All AST security rules and dynamic canary sandbox probes passed cleanly. No actionable sinks found.</div>
             </td>
           </tr>
         `;
@@ -2198,12 +2417,22 @@
         };
 
         let badgeClass = 'badge-unverified';
-        if (f.status === 'verified_fixed') badgeClass = 'badge-fixed';
-        else if (f.status === 'confirmed_dynamic') badgeClass = 'badge-dynamic';
-        else if (f.status === 'confirmed_static') badgeClass = 'badge-static';
-        else if (f.status === 'rejected') badgeClass = 'badge-rejected';
+        let badgeTitle = 'Static alert flagged; probe could not trigger exploit in sandbox';
+        if (f.status === 'verified_fixed') {
+          badgeClass = 'badge-fixed';
+          badgeTitle = 'Flaw dynamically proven in sandbox & neutralized by re-tested patch';
+        } else if (f.status === 'confirmed_dynamic') {
+          badgeClass = 'badge-dynamic';
+          badgeTitle = 'Exploit canary tripped in live sandbox container';
+        } else if (f.status === 'confirmed_static') {
+          badgeClass = 'badge-static';
+          badgeTitle = 'Deterministic static taint path confirmed from source to sink';
+        } else if (f.status === 'rejected') {
+          badgeClass = 'badge-rejected';
+          badgeTitle = 'Dismissed by adversarial verifier as harmless or false positive';
+        }
 
-        let evidenceText = 'No dynamic repro';
+        let evidenceText = 'No exploit canary tripped';
         if (f.probe_result && f.probe_result.canary_tripped) {
           evidenceText = f.probe_result.response_snippet ? escapeHtml(f.probe_result.response_snippet) : 'Canary token tripped';
         }
@@ -2215,9 +2444,9 @@
             </svg>
             <span class="severity-tag sev-${f.severity}">${f.severity}</span>
           </td>
-          <td><span class="badge ${badgeClass}">${f.status}</span></td>
-          <td><strong style="color: var(--text-primary);">${escapeHtml(f.vuln_type)}</strong><br/><span style="color: var(--text-secondary); font-size: 11px;">${escapeHtml(f.cwe)}</span></td>
-          <td><code>${escapeHtml(f.file_path)}:${f.line_number}</code></td>
+          <td><span class="badge ${badgeClass}" title="${escapeHtml(badgeTitle)}">${escapeHtml(f.status)}</span></td>
+          <td><strong class="finding-vuln-title">${escapeHtml(f.vuln_type)}</strong><br/><span class="finding-cwe">${escapeHtml(f.cwe)}</span></td>
+          <td><code class="finding-location">${escapeHtml(f.file_path)}:${f.line_number}</code></td>
           <td style="color: var(--text-secondary); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${evidenceText}</td>
         `;
 
@@ -2229,23 +2458,23 @@
           <td colspan="5">
             <div class="detail-grid">
               <div class="detail-block">
-                <div class="detail-title">Description &amp; Sink</div>
-                <p style="margin-bottom: 8px; color: var(--text-secondary); font-size: 12px;">${escapeHtml(f.description)}</p>
+                <div class="detail-title">Vulnerability Description &amp; Code Sink</div>
+                <p class="detail-description">${escapeHtml(f.description)}</p>
                 ${f.sink_code ? `<pre class="code-view">${escapeHtml(f.sink_code)}</pre>` : ''}
               </div>
               <div class="detail-block">
-                <div class="detail-title">Deterministic Canary Oracle</div>
+                <div class="detail-title">Deterministic Canary Oracle Probing</div>
                 ${f.probe_spec ? `
-                  <p style="font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);"><strong style="color: var(--text-primary);">Endpoint:</strong> <code>${f.probe_spec.method} ${escapeHtml(f.probe_spec.endpoint)}</code></p>
-                  <p style="font-size: 12px; margin-bottom: 4px; color: var(--text-secondary);"><strong style="color: var(--text-primary);">Canary Token:</strong> <code>${escapeHtml(f.probe_spec.canary_token)}</code></p>
-                  <p style="font-size: 12px; color: var(--text-secondary);"><strong style="color: var(--text-primary);">Tripped:</strong> ${f.probe_result && f.probe_result.canary_tripped ? '<span style="color: var(--badge-dynamic-text); font-weight: 700;">YES (EXPLOIT PROVEN)</span>' : '<span style="color: var(--text-muted);">NO</span>'}</p>
-                ` : '<p style="color: var(--text-muted); font-size: 12px;">Static taint sink; no HTTP route mapped.</p>'}
+                  <p class="detail-oracle-meta"><strong class="detail-oracle-label">Endpoint:</strong> <code>${f.probe_spec.method} ${escapeHtml(f.probe_spec.endpoint)}</code></p>
+                  <p class="detail-oracle-meta"><strong class="detail-oracle-label">Canary Token:</strong> <code>${escapeHtml(f.probe_spec.canary_token)}</code></p>
+                  <p class="detail-oracle-meta"><strong class="detail-oracle-label">Tripped:</strong> ${f.probe_result && f.probe_result.canary_tripped ? '<span style="color: var(--badge-dynamic-text); font-weight: 700;">YES — Exploit Canary Tripped in Sandbox</span>' : '<span style="color: var(--text-muted);">NO — Canary was not tripped (exploit unproven)</span>'}</p>
+                ` : '<p style="color: var(--text-muted); font-size: var(--font-size-xs); line-height: var(--lh-normal);">Static taint sink identified; no accessible HTTP route was mapped for sandbox canary probing.</p>'}
               </div>
             </div>
             ${f.patch_spec && f.patch_spec.unified_diff ? `
               <div class="detail-block" style="margin-top: 14px;">
-                <div class="detail-title">Speculative Patch (Sandbox Retest: ${f.patch_spec.retest_verified ? 'VERIFIED FIXED' : 'RETEST PENDING'})</div>
-                <p style="color: var(--text-secondary); font-size: 12px; margin-bottom: 8px;">${escapeHtml(f.patch_spec.explanation)}</p>
+                <div class="detail-title">Speculative Patch (Sandbox Retest: ${f.patch_spec.retest_verified ? 'VERIFIED NEUTRALIZED' : 'RETEST PENDING'})</div>
+                <p class="detail-description">${escapeHtml(f.patch_spec.explanation)}</p>
                 <pre class="code-view">${formatDiff(f.patch_spec.unified_diff)}</pre>
               </div>
             ` : ''}

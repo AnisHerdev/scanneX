@@ -88,15 +88,81 @@ class MarkdownExporter:
 <meta charset="utf-8">
 <title>ScanneX Security Report</title>
 <style>
-  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1f2328; max-width: 900px; margin: 40px auto; padding: 0 20px; }}
-  h1, h2, h3 {{ color: #0d1117; border-bottom: 1px solid #d0d7de; padding-bottom: 8px; }}
-  table {{ border-collapse: collapse; width: 100%; margin: 20px 0; }}
-  th, td {{ border: 1px solid #d0d7de; padding: 8px 12px; text-align: left; }}
-  th {{ background-color: #f6f8fa; }}
-  code {{ background-color: #eff1f3; padding: 2px 6px; border-radius: 4px; font-size: 90%; font-family: ui-monospace, SFMono-Regular, monospace; }}
-  pre {{ background-color: #f6f8fa; padding: 14px; border-radius: 6px; overflow-x: auto; border: 1px solid #d0d7de; }}
-  .badge-fixed {{ background: #dafbe1; color: #1a7f37; padding: 3px 8px; border-radius: 12px; font-weight: bold; }}
-  .badge-dynamic {{ background: #ffebe9; color: #cf222e; padding: 3px 8px; border-radius: 12px; font-weight: bold; }}
+  :root {
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  body {{
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    color: #1b2420;
+    max-width: 920px;
+    margin: 40px auto;
+    padding: 0 24px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }}
+  h1, h2, h3 {{
+    color: #0d1117;
+    border-bottom: 1px solid #d3ded7;
+    padding-bottom: 8px;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }}
+  table {{
+    border-collapse: collapse;
+    width: 100%;
+    margin: 20px 0;
+    font-variant-numeric: tabular-nums;
+  }}
+  th, td {{
+    border: 1px solid #d3ded7;
+    padding: 8px 14px;
+    text-align: left;
+    font-size: 13px;
+  }}
+  th {{
+    background-color: #f4f7f5;
+    font-weight: 600;
+  }}
+  code {{
+    background-color: #f3f7f4;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    border: 1px solid #d3ded7;
+    font-variant-numeric: tabular-nums;
+  }}
+  pre {{
+    background-color: #f8faf8;
+    padding: 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    border: 1px solid #d3ded7;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }}
+  .badge-fixed {{
+    background: #dafbe1;
+    color: #116329;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+  }}
+  .badge-dynamic {{
+    background: #ffebe9;
+    color: #cf222e;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+  }}
 </style>
 </head>
 <body>

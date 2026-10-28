@@ -123,14 +123,30 @@
 }
 ```
 
-## 3. Typography
-- **Primary Font Stack**: `-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"`
-- **Code & Diff Font Stack**: `ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace`
-- **Scale**:
-  - Headings: 1.5rem (24px), bold, tight line height
-  - Subheadings: 1.125rem (18px), semi-bold
-  - Body: 0.875rem (14px), 1.5 line height
-  - Code/Tables: 0.8125rem (13px), 1.4 line height
+## 3. Typography System & Type Scale
+
+### Font Families
+- **Primary Font Stack (`--font-sans`)**: `-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", -apple-system-subheadline, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"`
+- **Code & Diff Font Stack (`--font-mono`)**: `ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace`
+
+### Scale & Tokens (authored against `--p-scale: 1`)
+- `--font-size-2xs`: `calc(0.6875rem * var(--p-scale))` (11px) — Micro-badges, table headers, uppercase metadata
+- `--font-size-xs`: `calc(0.75rem * var(--p-scale))` (12px) — Monospace code, metadata, hints, terminal log
+- `--font-size-sm`: `calc(0.8125rem * var(--p-scale))` (13px) — Buttons, form controls, table cells, descriptions
+- `--font-size-base`: `calc(0.875rem * var(--p-scale))` (14px) — Core body copy, dropzone prompt, status titles
+- `--font-size-md`: `calc(1rem * var(--p-scale))` (16px) — Brand title, modal/dialog headers
+- `--font-size-lg`: `calc(1.125rem * var(--p-scale))` (18px) — Section subheadings, empty state headers
+- `--font-size-xl`: `calc(1.3125rem * var(--p-scale))` (21px) — Primary card headings (`.card-title`)
+- `--font-size-2xl`: `calc(1.75rem * var(--p-scale))` (28px) — Metric counters (`.metric-value`)
+
+### Rhythms, Tracking & Measures
+- **Leading**: tight (`1.25`) for headings and metrics, snug (`1.35`) for compact UI, normal (`1.5`) for body, relaxed (`1.62`) for terminal logs.
+- **Tracking (Letter Spacing)**: tighter (`-0.025em`) for large metric counters, tight (`-0.012em`) for headings, normal (`0`) for body prose, wide (`0.035em`) for small badges, wider (`0.055em`) for uppercase table headers.
+- **Prose Measure**: clamped to `68ch` (`--measure-prose`) to avoid overlong scan lines across wide monitors.
+- **Line Wrapping**: `text-wrap: balance` on all headings; `text-wrap: pretty` on all prose and descriptive text.
+- **Tabular Numerals**: `font-variant-numeric: tabular-nums` and `font-feature-settings: "tnum" 1` applied across metric counters, container IDs, PID badges, table cells, and log timestamps to prevent layout jitter during live scanning.
+- **Dark Mode Perceptual Compensation**: calibrated with slightly increased line-height (+0.05) and relaxed tracking (+0.01em) to counterbalance optical irradiation and halation on dark surfaces.
+- **Accessible Action Links**: `--text-action: #116329` in light mode (7.2:1 contrast against `#f8faf8`), meeting WCAG AA requirements with `text-underline-offset: 3px`.
 
 ## 4. Components & Interactive States
 - **Top Navigation Bar**:
