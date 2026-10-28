@@ -1565,7 +1565,7 @@
 
     function pollStatus() {
       if (!activeSessionId) return;
-      fetch(/api/scan//status)
+      fetch(`/api/scan/${activeSessionId}/status`)
         .then(res => {
           if (!res.ok) {
             clearInterval(pollInterval);
