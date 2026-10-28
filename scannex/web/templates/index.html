@@ -21,128 +21,130 @@
 
   <style>
     /* ==========================================================================
-       GitHub-Inspired Design System: Light (Sage Hint) & Dark Modes
+       Greptile-Grade Design System: Obsidian Zinc & Emerald Themes
        ========================================================================== */
     
     :root,
     [data-theme="light"] {
-      /* Surfaces & Canvases */
-      --bg-canvas: #f4f7f5;               /* Crisp pale sage-slate canvas with subtle green freshness */
-      --bg-surface: #ffffff;              /* Clean solid white cards and panels */
-      --bg-surface-elevated: #eef4f0;     /* 1-step elevated sage-neutral */
-      --bg-surface-hover: #eaf1ec;        /* Subtle green-tinted hover */
-      --bg-inset: #f8faf8;                /* Inset backgrounds */
-      --bg-code: #f3f7f4;                 /* Code block background */
-      --bg-terminal: #0d1117;             /* Terminal dark background for console */
+      /* Surfaces & Canvases - High Surface-to-Canvas Contrast */
+      --bg-canvas: #ebedf1;               /* Distinct light-slate canvas for clear card separation */
+      --bg-surface: #ffffff;              /* Pure white cards and panels that pop against canvas */
+      --bg-surface-elevated: #e2e5ea;     /* 1-step elevated light neutral */
+      --bg-surface-hover: #eceef2;        /* Subtle hover tone */
+      --bg-inset: #f8fafc;                /* Clean inset backgrounds */
+      --bg-code: #f1f5f9;                 /* Code block background */
+      --bg-terminal: #090d12;             /* Terminal dark background for console */
 
       /* Borders & Dividers */
-      --border-subtle: #d3ded7;           /* 1px clean border with subtle sage hint */
-      --border-strong: #b9c9c0;           /* Clean stronger separator */
-      --border-focus: #1f883d;            /* GitHub solid green focus border */
-      --focus-ring: rgba(31, 136, 61, 0.25);
+      --border-subtle: #cbd5e1;           /* Crisp, clearly visible card perimeter border */
+      --border-strong: #94a3b8;           /* High-contrast thick separator & dashed lines */
+      --border-focus: #10b981;            /* Greptile Emerald focus border */
+      --focus-ring: rgba(16, 185, 129, 0.25);
 
-      /* Typography & Text */
-      --text-primary: #1b2420;            /* Deep forest-charcoal (14.8:1 contrast) */
-      --text-secondary: #4d5b53;          /* Mid forest-slate (6.2:1 contrast) */
-      --text-muted: #6f8076;              /* Muted text (4.5:1 contrast) */
-      --text-action: #116329;             /* Accessible high-contrast green text (7.2:1 on canvas, 6.5:1 on elevated) */
-      --text-action-hover: #0c4a1e;
+      /* Typography & Text (WCAG AAA/AA Ultra High Contrast) */
+      --text-primary: #020617;            /* Deepest charcoal-slate (18:1 contrast) */
+      --text-secondary: #1e293b;          /* High-contrast mid-slate (13:1 contrast) */
+      --text-muted: #475569;              /* High-contrast muted text (7.5:1 contrast) */
+      --text-action: #065f46;             /* Accessible emerald text (5.2:1 contrast on elevated) */
+      --text-action-hover: #064e3b;
 
-      /* GitHub Solid Green Primary Accent */
-      --accent-primary: #1f883d;
-      --accent-primary-hover: #1a7f37;
-      --accent-primary-active: #187333;
+      /* Greptile Emerald Primary Accent (WCAG AA compliant 5.6:1 contrast against #ffffff) */
+      --accent-primary: #047857;          /* Emerald-700 */
+      --accent-primary-hover: #065f46;    /* Emerald-800 */
+      --accent-primary-active: #064e3b;   /* Emerald-900 */
       --accent-primary-text: #ffffff;
-      --accent-primary-shadow: 0 1px 0 rgba(27, 31, 36, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      --accent-primary-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 
       /* Secondary Button */
-      --btn-sec-bg: #f6faf7;
-      --btn-sec-border: #d3ded7;
-      --btn-sec-text: #1b2420;
-      --btn-sec-hover: #eaf2ec;
+      --btn-sec-bg: #ffffff;
+      --btn-sec-border: #cbd5e1;
+      --btn-sec-text: #020617;
+      --btn-sec-hover: #f1f5f9;
 
-      /* Semantic Badges (GitHub Style) */
-      --badge-fixed-bg: #dafbe1;
-      --badge-fixed-text: #116329;
-      --badge-fixed-border: #aceebb;
+      /* Semantic Badges */
+      --badge-fixed-bg: #ecfdf5;
+      --badge-fixed-text: #047857;
+      --badge-fixed-border: #a7f3d0;
 
-      --badge-dynamic-bg: #ffebe9;
-      --badge-dynamic-text: #cf222e;
-      --badge-dynamic-border: #ffc1ba;
+      --badge-dynamic-bg: #fff1f2;
+      --badge-dynamic-text: #be123c;
+      --badge-dynamic-border: #fecdd3;
 
-      --badge-static-bg: #fff8c5;
-      --badge-static-text: #7a4d00;
-      --badge-static-border: #f4cf64;
+      --badge-static-bg: #fffbeb;
+      --badge-static-text: #b45309;
+      --badge-static-border: #fde68a;
 
-      --badge-unverified-bg: #eff2f5;
-      --badge-unverified-text: #424a53;
-      --badge-unverified-border: #d0d7de;
+      --badge-unverified-bg: #f1f5f9;
+      --badge-unverified-text: #334155;
+      --badge-unverified-border: #cbd5e1;
 
-      --badge-rejected-bg: #fbefff;
-      --badge-rejected-text: #6e3ab8;
-      --badge-rejected-border: #e8deee;
+      --badge-rejected-bg: #faf5ff;
+      --badge-rejected-text: #7e22ce;
+      --badge-rejected-border: #e9d5ff;
 
       /* Severities */
-      --sev-critical: #cf222e;
-      --sev-high: #bc4c00;
-      --sev-medium: #9a6700;
-      --sev-low: #0969da;
+      --sev-critical: #e11d48;
+      --sev-high: #ea580c;
+      --sev-medium: #d97706;
+      --sev-low: #0284c7;
 
       /* Diff colors */
-      --diff-add-bg: rgba(46, 160, 67, 0.15);
-      --diff-add-text: #116329;
-      --diff-del-bg: rgba(207, 34, 46, 0.12);
-      --diff-del-text: #cf222e;
+      --diff-add-bg: rgba(16, 185, 129, 0.14);
+      --diff-add-text: #047857;
+      --diff-del-bg: rgba(244, 63, 94, 0.12);
+      --diff-del-text: #be123c;
 
       /* Flash Alerts */
-      --flash-error-bg: #ffebe9;
-      --flash-error-border: #ffc1ba;
-      --flash-error-text: #cf222e;
-      --flash-warn-bg: #fff8c5;
-      --flash-warn-border: #f4cf64;
-      --flash-warn-text: #7a4d00;
+      --flash-error-bg: #fff1f2;
+      --flash-error-border: #fecdd3;
+      --flash-error-text: #be123c;
+      --flash-warn-bg: #fffbeb;
+      --flash-warn-border: #fde68a;
+      --flash-warn-text: #b45309;
 
       /* Depth & Interaction */
-      --card-shadow: 0 1px 3px rgba(27, 31, 36, 0.04), 0 1px 2px rgba(27, 31, 36, 0.02);
-      --selection-bg: rgba(31, 136, 61, 0.2);
+      --card-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
+      --card-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      --selection-bg: rgba(16, 185, 129, 0.2);
 
-      /* Sandbox Monitor Tokens (Light Mode - WCAG AA High Contrast) */
-      --sb-monitor-bg: #f8faf8;
-      --sb-monitor-border: #d3ded7;
+      /* Sandbox Monitor Tokens */
+      --sb-monitor-bg: #f8fafc;
+      --sb-monitor-border: #cbd5e1;
       --sb-card-bg: #ffffff;
-      --sb-card-border: #b9c9c0;
-      --sb-name-color: #0969da;
-      --sb-meta-bg: #f3f7f4;
-      --sb-meta-border: #d3ded7;
-      --sb-meta-label: #4d5b53;
-      --sb-meta-val: #1b2420;
-      --sb-pid-color: #116329;
-      --sb-target-color: #7a4d00;
-      --sb-hint-color: #4d5b53;
+      --sb-card-border: #cbd5e1;
+      --sb-name-color: #0284c7;
+      --sb-meta-bg: #f1f5f9;
+      --sb-meta-border: #cbd5e1;
+      --sb-meta-label: #475569;
+      --sb-meta-val: #020617;
+      --sb-pid-color: #047857;
+      --sb-target-color: #b45309;
+      --sb-hint-color: #475569;
+      --dot-grid-color: rgba(15, 23, 42, 0.09);
     }
 
     [data-theme="dark"] {
-      /* Surfaces & Canvases */
-      --bg-canvas: #0d1117;               /* Authentic GitHub dark canvas */
-      --bg-surface: #161b22;              /* GitHub dark cards/surfaces */
-      --bg-surface-elevated: #21262d;     /* GitHub elevated header/tabs */
-      --bg-surface-hover: #29303a;        /* GitHub surface hover */
-      --bg-inset: #090d12;                /* Dark inset */
-      --bg-code: #0b0f14;                 /* Code block dark */
-      --bg-terminal: #070a0e;             /* Terminal console dark */
+      /* Surfaces & Canvases - High Surface-to-Canvas Contrast */
+      --bg-canvas: #08090b;               /* Deep Obsidian Pitch canvas */
+      --bg-surface: #161820;              /* Distinct, elevated dark card surface that pops */
+      --bg-surface-elevated: #20232c;     /* 1-step elevated tabs & header */
+      --bg-surface-hover: #262935;        /* Noticeable hover surface */
+      --bg-inset: #0c0d12;                /* Deep recessed dark inset */
+      --bg-code: #0b0c10;                 /* Monospace code block */
+      --bg-terminal: #07080a;             /* Console terminal background */
 
-      /* Borders & Dividers */
-      --border-subtle: #30363d;           /* GitHub dark border subtle */
-      --border-strong: #484f58;           /* GitHub dark border strong */
-      --border-focus: #2ea043;            /* GitHub green focus border */
-      --focus-ring: rgba(46, 160, 67, 0.35);
+      /* Borders & Dividers - High Contrast Definitions */
+      --border-subtle: rgba(255, 255, 255, 0.14); /* Crisp, visible card edges */
+      --border-strong: rgba(255, 255, 255, 0.28); /* High-contrast dashed lines & dividers */
+      --border-focus: #10b981;                    /* Emerald focus border */
+      --focus-ring: rgba(16, 185, 129, 0.35);
 
-      /* Typography & Text */
-      --text-primary: #f0f6fc;            /* GitHub dark high contrast (14.1:1) */
-      --text-secondary: #8b949e;          /* GitHub dark mid text (6.4:1) */
-      --text-muted: #6e7681;              /* GitHub dark muted (4.5:1) */
-      --text-action: #3fb950;             /* Accessible green text in dark mode (7.3:1 contrast) */
-      --text-action-hover: #56d364;
+      /* Typography & Text (WCAG AAA Ultra High Contrast) */
+      --text-primary: #ffffff;            /* Pure white maximum contrast (18:1 against cards) */
+      --text-secondary: #e4e4e7;          /* Zinc-200 effortless readability (12:1 contrast) */
+      --text-muted: #a1a1aa;              /* Zinc-400 clean muted text (6.8:1 contrast) */
+      --text-action: #34d399;             /* Accessible emerald text in dark (9:1 contrast) */
+      --text-action-hover: #6ee7b7;
 
       /* Optical dark-mode perceptual compensation */
       --track-tighter: -0.015em;
@@ -155,77 +157,79 @@
       --lh-normal: 1.55;
       --lh-relaxed: 1.68;
 
-      /* GitHub Solid Green Primary Accent (Dark) */
-      --accent-primary: #238636;
-      --accent-primary-hover: #2ea043;
-      --accent-primary-active: #29903b;
-      --accent-primary-text: #ffffff;
-      --accent-primary-shadow: 0 0 transparent;
+      /* Greptile Emerald Primary Accent (Dark) */
+      --accent-primary: #10b981;          /* Emerald-500 */
+      --accent-primary-hover: #059669;    /* Emerald-600 */
+      --accent-primary-active: #047857;
+      --accent-primary-text: #09090b;     /* High contrast crisp dark text on bright emerald */
+      --accent-primary-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 
       /* Secondary Button (Dark) */
-      --btn-sec-bg: #21262d;
-      --btn-sec-border: #30363d;
-      --btn-sec-text: #c9d1d9;
-      --btn-sec-hover: #30363d;
+      --btn-sec-bg: #20232c;
+      --btn-sec-border: rgba(255, 255, 255, 0.16);
+      --btn-sec-text: #ffffff;
+      --btn-sec-hover: #2a2e3a;
 
       /* Semantic Badges (Dark) */
-      --badge-fixed-bg: rgba(46, 160, 67, 0.15);
-      --badge-fixed-text: #3fb950;
-      --badge-fixed-border: rgba(46, 160, 67, 0.4);
+      --badge-fixed-bg: rgba(16, 185, 129, 0.18);
+      --badge-fixed-text: #34d399;
+      --badge-fixed-border: rgba(16, 185, 129, 0.5);
 
-      --badge-dynamic-bg: rgba(248, 81, 73, 0.15);
-      --badge-dynamic-text: #ff7b72;
-      --badge-dynamic-border: rgba(248, 81, 73, 0.4);
+      --badge-dynamic-bg: rgba(244, 63, 94, 0.18);
+      --badge-dynamic-text: #fb7185;
+      --badge-dynamic-border: rgba(244, 63, 94, 0.5);
 
-      --badge-static-bg: rgba(210, 153, 34, 0.15);
-      --badge-static-text: #d29922;
-      --badge-static-border: rgba(210, 153, 34, 0.4);
+      --badge-static-bg: rgba(245, 158, 11, 0.18);
+      --badge-static-text: #fbbf24;
+      --badge-static-border: rgba(245, 158, 11, 0.5);
 
-      --badge-unverified-bg: rgba(110, 118, 129, 0.15);
-      --badge-unverified-text: #8b949e;
-      --badge-unverified-border: rgba(110, 118, 129, 0.4);
+      --badge-unverified-bg: rgba(161, 161, 170, 0.16);
+      --badge-unverified-text: #f4f4f5;
+      --badge-unverified-border: rgba(161, 161, 170, 0.45);
 
-      --badge-rejected-bg: rgba(163, 113, 247, 0.15);
-      --badge-rejected-text: #bc8cff;
-      --badge-rejected-border: rgba(163, 113, 247, 0.4);
+      --badge-rejected-bg: rgba(168, 85, 247, 0.18);
+      --badge-rejected-text: #c084fc;
+      --badge-rejected-border: rgba(168, 85, 247, 0.45);
 
       /* Severities */
-      --sev-critical: #ff7b72;
-      --sev-high: #ffa657;
-      --sev-medium: #e3b341;
-      --sev-low: #58a6ff;
+      --sev-critical: #fb7185;
+      --sev-high: #fb923c;
+      --sev-medium: #fbbf24;
+      --sev-low: #38bdf8;
 
       /* Diff colors (Dark) */
-      --diff-add-bg: rgba(46, 160, 67, 0.18);
-      --diff-add-text: #3fb950;
-      --diff-del-bg: rgba(248, 81, 73, 0.18);
-      --diff-del-text: #ff7b72;
+      --diff-add-bg: rgba(16, 185, 129, 0.20);
+      --diff-add-text: #34d399;
+      --diff-del-bg: rgba(244, 63, 94, 0.20);
+      --diff-del-text: #fb7185;
 
       /* Flash Alerts (Dark) */
-      --flash-error-bg: rgba(248, 81, 73, 0.15);
-      --flash-error-border: rgba(248, 81, 73, 0.4);
-      --flash-error-text: #ff7b72;
-      --flash-warn-bg: rgba(210, 153, 34, 0.15);
-      --flash-warn-border: rgba(210, 153, 34, 0.4);
-      --flash-warn-text: #d29922;
+      --flash-error-bg: rgba(244, 63, 94, 0.18);
+      --flash-error-border: rgba(244, 63, 94, 0.5);
+      --flash-error-text: #fb7185;
+      --flash-warn-bg: rgba(245, 158, 11, 0.18);
+      --flash-warn-border: rgba(245, 158, 11, 0.5);
+      --flash-warn-text: #fbbf24;
 
       /* Depth & Interaction */
-      --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-      --selection-bg: rgba(46, 160, 67, 0.3);
+      --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6), 0 2px 6px -1px rgba(0, 0, 0, 0.4);
+      --card-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      --selection-bg: rgba(16, 185, 129, 0.28);
 
-      /* Sandbox Monitor Tokens (Dark Mode - WCAG AA High Contrast) */
-      --sb-monitor-bg: #090d12;
-      --sb-monitor-border: #30363d;
-      --sb-card-bg: #161b22;
-      --sb-card-border: #484f58;
-      --sb-name-color: #58a6ff;
-      --sb-meta-bg: #0b0f14;
-      --sb-meta-border: #30363d;
-      --sb-meta-label: #8b949e;
-      --sb-meta-val: #f0f6fc;
-      --sb-pid-color: #3fb950;
-      --sb-target-color: #d29922;
-      --sb-hint-color: #8b949e;
+      /* Sandbox Monitor Tokens (Dark Mode) */
+      --sb-monitor-bg: #0c0d12;
+      --sb-monitor-border: rgba(255, 255, 255, 0.14);
+      --sb-card-bg: #161820;
+      --sb-card-border: rgba(255, 255, 255, 0.20);
+      --sb-name-color: #38bdf8;
+      --sb-meta-bg: #0b0c10;
+      --sb-meta-border: rgba(255, 255, 255, 0.12);
+      --sb-meta-label: #a1a1aa;
+      --sb-meta-val: #ffffff;
+      --sb-pid-color: #34d399;
+      --sb-target-color: #fbbf24;
+      --sb-hint-color: #a1a1aa;
+      --dot-grid-color: rgba(255, 255, 255, 0.08);
     }
 
     :root {
@@ -282,6 +286,8 @@
 
     body {
       background-color: var(--bg-canvas);
+      background-image: radial-gradient(var(--dot-grid-color) 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
       color: var(--text-primary);
       font-family: var(--font-sans);
       font-size: var(--font-size-base);
@@ -349,6 +355,9 @@
     /* Top Navigation Bar */
     header {
       background-color: var(--bg-surface);
+      background-color: color-mix(in srgb, var(--bg-surface) 88%, transparent);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border-subtle);
       padding: 12px 32px;
       display: flex;
@@ -371,11 +380,11 @@
       width: 32px;
       height: 32px;
       background: var(--accent-primary);
-      border-radius: 6px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #ffffff;
+      color: var(--accent-primary-text);
       box-shadow: var(--accent-primary-shadow);
       transition: background-color 200ms ease;
     }
@@ -424,13 +433,13 @@
       background-color: var(--btn-sec-bg);
       color: var(--text-secondary);
       border: 1px solid var(--btn-sec-border);
-      padding: 5px 11px;
+      padding: 5px 12px;
       border-radius: 6px;
       font-size: var(--font-size-xs);
       font-weight: var(--fw-medium);
       letter-spacing: var(--track-normal);
       cursor: pointer;
-      box-shadow: 0 1px 0 rgba(27, 31, 36, 0.04);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
       transition: all 150ms ease;
     }
 
@@ -512,10 +521,10 @@
     .card {
       background-color: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 24px 28px;
       margin-bottom: 24px;
-      box-shadow: var(--card-shadow);
+      box-shadow: var(--card-shadow), var(--card-inset-highlight);
       transition: background-color 200ms ease, border-color 200ms ease;
     }
 
@@ -546,10 +555,23 @@
       display: inline-flex;
       background-color: var(--bg-inset);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 3px;
       gap: 2px;
       margin-bottom: 20px;
+    }
+
+    .source-choice-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .source-choice-row .tab-nav {
+      margin-bottom: 0;
     }
 
     .tab-btn {
@@ -560,8 +582,8 @@
       font-weight: var(--fw-medium);
       letter-spacing: var(--track-normal);
       line-height: var(--lh-none);
-      padding: 6px 14px;
-      border-radius: 5px;
+      padding: 7px 14px;
+      border-radius: 6px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -578,21 +600,48 @@
       border-color: var(--border-subtle);
       color: var(--text-primary);
       font-weight: var(--fw-semibold);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
     /* Segmented LLM Mode Toggle Buttons */
+    .verification-mode-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .mode-toggle {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      width: 450px;
+      max-width: 100%;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--btn-sec-bg);
+    }
+
     .mode-seg-btn {
       background: var(--btn-sec-bg);
       color: var(--text-secondary);
       border: none;
       border-right: 1px solid var(--border-strong);
-      padding: 6px 12px;
+      min-width: 0;
+      min-height: 48px;
+      padding: 7px 10px;
       cursor: pointer;
       font-size: var(--font-size-xs);
       font-weight: var(--fw-medium);
       letter-spacing: var(--track-normal);
       font-family: inherit;
+      line-height: 1.2;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
       transition: all 140ms ease;
     }
 
@@ -602,18 +651,34 @@
 
     .mode-seg-btn:hover {
       color: var(--text-primary);
+      background: var(--bg-surface-hover);
+    }
+
+    .mode-seg-btn:focus-visible {
+      position: relative;
+      z-index: 1;
+      outline: 2px solid var(--border-focus);
+      outline-offset: -3px;
     }
 
     .mode-seg-btn.active {
       background: var(--bg-surface-elevated);
       color: var(--text-primary);
       font-weight: var(--fw-semibold);
+      box-shadow: inset 0 0 0 1px var(--border-subtle);
+    }
+
+    .mode-status-badge {
+      margin: 0;
+      padding-inline: 5px;
+      font-size: 10px;
+      line-height: 1.2;
     }
 
     /* Dropzone Empty State */
     .dropzone {
-      border: 2px dashed var(--border-strong);
-      border-radius: 6px;
+      border: 2.5px dashed var(--border-strong);
+      border-radius: 8px;
       padding: 44px 20px;
       text-align: center;
       cursor: pointer;
@@ -624,6 +689,7 @@
     .dropzone:hover, .dropzone.dragover, .dropzone:focus-visible {
       border-color: var(--accent-primary);
       background-color: var(--bg-surface-elevated);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .dropzone-icon {
@@ -733,6 +799,21 @@
       font-weight: var(--fw-medium);
     }
 
+    .btn-benchmark {
+      min-height: 48px;
+      padding: 8px 14px;
+      font-weight: var(--fw-semibold);
+      gap: 8px;
+      align-self: flex-start;
+      flex: 0 1 auto;
+      max-width: 100%;
+      margin-left: auto;
+    }
+
+    .btn-benchmark svg {
+      flex: 0 0 auto;
+    }
+
     .spinner {
       animation: spin 1s linear infinite;
     }
@@ -743,25 +824,29 @@
 
     .options-bar {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      align-items: flex-start;
       margin-top: 20px;
       padding-top: 18px;
       border-top: 1px solid var(--border-subtle);
       font-size: var(--font-size-xs);
       color: var(--text-secondary);
+      gap: 12px;
     }
 
     .options-group {
       display: flex;
       align-items: center;
       gap: 12px;
+      min-width: 0;
     }
 
     .select-label {
       font-size: var(--font-size-xs);
       font-weight: var(--fw-semibold);
       color: var(--text-secondary);
+      white-space: nowrap;
     }
 
     .select-input {
@@ -785,10 +870,10 @@
     /* Scanner & Rule Pack Checklist */
     .rules-panel {
       margin-top: 14px;
-      padding: 12px 14px;
+      padding: 14px 16px;
       background: var(--bg-inset);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -850,10 +935,10 @@
       display: flex;
       align-items: flex-start;
       gap: 8px;
-      padding: 8px 10px;
+      padding: 9px 12px;
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
       user-select: none;
       transition: border-color 140ms ease, background-color 140ms ease;
@@ -865,7 +950,7 @@
     }
 
     .rule-card.active {
-      border-color: rgba(35, 134, 54, 0.4);
+      border-color: var(--accent-primary);
     }
 
     .rule-cb {
@@ -903,10 +988,10 @@
       display: none;
       background-color: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 20px 24px;
       margin-bottom: 24px;
-      box-shadow: var(--card-shadow);
+      box-shadow: var(--card-shadow), var(--card-inset-highlight);
     }
 
     .status-header {
@@ -943,7 +1028,7 @@
     .sandbox-monitor {
       background-color: var(--sb-monitor-bg);
       border: 1px solid var(--sb-monitor-border);
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 14px 18px;
       margin-bottom: 16px;
     }
@@ -986,7 +1071,7 @@
     .sandbox-card {
       background-color: var(--sb-card-bg);
       border: 1px solid var(--sb-card-border);
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 12px 16px;
       display: flex;
       flex-direction: column;
@@ -1014,7 +1099,7 @@
       gap: 10px 16px;
       background-color: var(--sb-meta-bg);
       padding: 8px 12px;
-      border-radius: 4px;
+      border-radius: 6px;
       border: 1px solid var(--sb-meta-border);
     }
 
@@ -1054,12 +1139,12 @@
     .event-log {
       background-color: var(--bg-terminal);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 14px 16px;
       font-family: var(--font-mono);
       font-size: var(--font-size-xs);
-      color: #c9d1d9;
-      max-height: 220px;
+      color: var(--text-secondary);
+      max-height: 240px;
       overflow-y: auto;
       line-height: var(--lh-relaxed);
       font-variant-numeric: tabular-nums;
@@ -1072,23 +1157,23 @@
     }
 
     .event-stage {
-      color: #58a6ff;
+      color: var(--accent-primary);
       font-weight: var(--fw-semibold);
       margin-right: 4px;
     }
 
     .event-canary {
-      color: #ff7b72;
+      color: var(--sev-critical);
       font-weight: var(--fw-semibold);
     }
 
     .event-fixed {
-      color: #3fb950;
+      color: var(--text-action);
       font-weight: var(--fw-semibold);
     }
 
     .event-error {
-      color: #f85149;
+      color: var(--sev-critical);
       font-weight: var(--fw-semibold);
     }
 
@@ -1108,9 +1193,9 @@
     .metric-card {
       background-color: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 16px 20px;
-      box-shadow: var(--card-shadow);
+      box-shadow: var(--card-shadow), var(--card-inset-highlight);
       display: flex;
       flex-direction: column;
     }
@@ -1138,9 +1223,9 @@
     .table-container {
       background-color: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: var(--card-shadow);
+      box-shadow: var(--card-shadow), var(--card-inset-highlight);
       margin-bottom: 24px;
     }
 
@@ -1309,7 +1394,7 @@
     .detail-block {
       background-color: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 14px 16px;
     }
 
@@ -1349,7 +1434,7 @@
       color: var(--text-primary);
       background-color: var(--bg-code);
       padding: 10px 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       overflow-x: auto;
       border: 1px solid var(--border-subtle);
       line-height: var(--lh-normal);
@@ -1361,16 +1446,16 @@
       color: var(--diff-add-text);
       background-color: var(--diff-add-bg);
       display: block;
-      padding: 1px 4px;
-      border-radius: 2px;
+      padding: 2px 6px;
+      border-radius: 4px;
     }
 
     .diff-del {
       color: var(--diff-del-text);
       background-color: var(--diff-del-bg);
       display: block;
-      padding: 1px 4px;
-      border-radius: 2px;
+      padding: 2px 6px;
+      border-radius: 4px;
     }
 
     /* Empty Findings State */
@@ -1438,6 +1523,9 @@
       .nav-meta {
         gap: 8px;
       }
+      .verification-mode-control {
+        flex-wrap: nowrap;
+      }
     }
 
     @media (max-width: 540px) {
@@ -1449,6 +1537,17 @@
       }
       .nav-meta-text {
         display: none;
+      }
+      .mode-toggle {
+        width: min(450px, calc(100vw - 64px));
+      }
+      .mode-seg-btn {
+        padding-inline: 6px;
+        font-size: 11px;
+        min-height: 48px;
+      }
+      .options-group > div:first-child {
+        max-width: 100%;
       }
     }
   </style>
@@ -1519,7 +1618,8 @@
         <p class="card-description">Drop a source repository ZIP, enter a GitHub URL, or launch the retrospective benchmark CVE demo.</p>
       </div>
 
-      <!-- Ingestion Mode Tabs with ARIA -->
+      <!-- Ingestion Mode Tabs and Benchmark Action -->
+      <div class="source-choice-row">
       <div class="tab-nav" role="tablist" aria-label="Ingestion Source Mode">
         <button class="tab-btn active" role="tab" id="tab-btn-zip" aria-selected="true" aria-controls="tab-zip" onclick="switchTab('zip')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1538,6 +1638,13 @@
           </svg>
           GitHub Repository
         </button>
+      </div>
+      <button class="btn btn-secondary btn-benchmark" id="btn-demo-scan" onclick="startDemoScan()" title="Execute packaged vulnerable benchmark CVE app and verify fix in sandbox">
+        <svg id="icon-demo-scan" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <span id="text-demo-scan">Run Benchmark CVE Demo</span>
+      </button>
       </div>
 
       <!-- Tab 1: ZIP Dropzone -->
@@ -1577,13 +1684,13 @@
         <div class="options-group" style="flex-wrap: wrap; gap: 10px;">
 
           <!-- 3-Way LLM Mode Segmented Toggle -->
-          <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="verification-mode-control">
             <span class="select-label">Verification Engine:</span>
-            <div id="mode-toggle" style="display: inline-flex; border: 1px solid var(--border-strong); border-radius: 6px; overflow: hidden;">
+            <div id="mode-toggle" class="mode-toggle" role="group" aria-label="Verification engine">
               <button id="mode-btn-mock" class="mode-seg-btn active" onclick="setLLMMode('mock')" title="Deterministic offline simulation — no external API key required">Simulation / Mock</button>
               <button id="mode-btn-ollama" class="mode-seg-btn" onclick="setLLMMode('ollama')" title="Local neural inference via Ollama runtime">
                 Local LLM (Ollama)
-                <span id="ollama-status-badge" class="badge badge-unverified" style="margin-left: 6px;">…</span>
+                <span id="ollama-status-badge" class="badge badge-unverified mode-status-badge">…</span>
               </button>
               <button id="mode-btn-gemini" class="mode-seg-btn" onclick="setLLMMode('gemini')" title="Cloud verification via Google Gemini (requires GEMINI_API_KEY)">Online (Gemini)</button>
             </div>
@@ -1608,12 +1715,6 @@
           </label>
 
         </div>
-        <button class="btn btn-secondary" id="btn-demo-scan" onclick="startDemoScan()" title="Execute packaged vulnerable benchmark CVE app and verify fix in sandbox">
-          <svg id="icon-demo-scan" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-          </svg>
-          <span id="text-demo-scan">Run Benchmark CVE Demo</span>
-        </button>
       </div>
 
       <!-- Scanner & Rule Pack Checklist -->
@@ -2291,10 +2392,10 @@
             sbBadge.innerText = `${sandboxes.length} Active Container${sandboxes.length > 1 ? 's' : ''}`;
 
             sbGrid.innerHTML = sandboxes.map(s => {
-              const typeBadge = s.type === 'docker' ? '🐳 DOCKER' : '⚙️ SUBPROCESS';
+              const typeBadge = s.type === 'docker' ? 'DOCKER' : 'SUBPROCESS';
               const pidDisplay = s.pid ? s.pid : 'N/A';
               const cidDisplay = s.container_id ? s.container_id : 'Local Process';
-              const portDisplay = s.port ? `Host :${s.port} ➔ Cont :5000` : 'Dynamic';
+              const portDisplay = s.port ? `Host :${s.port} → Cont :5000` : 'Dynamic';
               const target = s.vuln_type ? `[${s.vuln_type}]` : 'Canary Proving';
 
               return `

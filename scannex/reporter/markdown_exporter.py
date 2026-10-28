@@ -88,14 +88,14 @@ class MarkdownExporter:
 <meta charset="utf-8">
 <title>ScanneX Security Report</title>
 <style>
-  :root {
-    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  :root {{
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  }
+  }}
   body {{
     font-family: var(--font-sans);
     line-height: 1.6;
-    color: #1b2420;
+    color: #09090b;
     max-width: 920px;
     margin: 40px auto;
     padding: 0 24px;
@@ -103,8 +103,8 @@ class MarkdownExporter:
     text-rendering: optimizeLegibility;
   }}
   h1, h2, h3 {{
-    color: #0d1117;
-    border-bottom: 1px solid #d3ded7;
+    color: #09090b;
+    border-bottom: 1px solid #e4e4e7;
     padding-bottom: 8px;
     letter-spacing: -0.015em;
     text-wrap: balance;
@@ -116,38 +116,38 @@ class MarkdownExporter:
     font-variant-numeric: tabular-nums;
   }}
   th, td {{
-    border: 1px solid #d3ded7;
+    border: 1px solid #e4e4e7;
     padding: 8px 14px;
     text-align: left;
     font-size: 13px;
   }}
   th {{
-    background-color: #f4f7f5;
+    background-color: #f4f4f5;
     font-weight: 600;
   }}
   code {{
-    background-color: #f3f7f4;
+    background-color: #f1f5f9;
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 12px;
     font-family: var(--font-mono);
-    border: 1px solid #d3ded7;
+    border: 1px solid #e4e4e7;
     font-variant-numeric: tabular-nums;
   }}
   pre {{
-    background-color: #f8faf8;
+    background-color: #f8fafc;
     padding: 16px;
     border-radius: 6px;
     overflow-x: auto;
-    border: 1px solid #d3ded7;
+    border: 1px solid #e4e4e7;
     font-family: var(--font-mono);
     font-size: 13px;
     line-height: 1.5;
     font-variant-numeric: tabular-nums;
   }}
   .badge-fixed {{
-    background: #dafbe1;
-    color: #116329;
+    background: #ecfdf5;
+    color: #047857;
     padding: 3px 8px;
     border-radius: 12px;
     font-weight: 600;
@@ -155,8 +155,8 @@ class MarkdownExporter:
     text-transform: uppercase;
   }}
   .badge-dynamic {{
-    background: #ffebe9;
-    color: #cf222e;
+    background: #fff1f2;
+    color: #be123c;
     padding: 3px 8px;
     border-radius: 12px;
     font-weight: 600;
