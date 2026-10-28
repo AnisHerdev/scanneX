@@ -103,6 +103,20 @@
       /* Depth & Interaction */
       --card-shadow: 0 1px 3px rgba(27, 31, 36, 0.04), 0 1px 2px rgba(27, 31, 36, 0.02);
       --selection-bg: rgba(31, 136, 61, 0.2);
+
+      /* Sandbox Monitor Tokens (Light Mode - WCAG AA High Contrast) */
+      --sb-monitor-bg: #f8faf8;
+      --sb-monitor-border: #d3ded7;
+      --sb-card-bg: #ffffff;
+      --sb-card-border: #b9c9c0;
+      --sb-name-color: #0969da;
+      --sb-meta-bg: #f3f7f4;
+      --sb-meta-border: #d3ded7;
+      --sb-meta-label: #4d5b53;
+      --sb-meta-val: #1b2420;
+      --sb-pid-color: #116329;
+      --sb-target-color: #7a4d00;
+      --sb-hint-color: #4d5b53;
     }
 
     [data-theme="dark"] {
@@ -183,6 +197,20 @@
       /* Depth & Interaction */
       --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
       --selection-bg: rgba(46, 160, 67, 0.3);
+
+      /* Sandbox Monitor Tokens (Dark Mode - WCAG AA High Contrast) */
+      --sb-monitor-bg: #090d12;
+      --sb-monitor-border: #30363d;
+      --sb-card-bg: #161b22;
+      --sb-card-border: #484f58;
+      --sb-name-color: #58a6ff;
+      --sb-meta-bg: #0b0f14;
+      --sb-meta-border: #30363d;
+      --sb-meta-label: #8b949e;
+      --sb-meta-val: #f0f6fc;
+      --sb-pid-color: #3fb950;
+      --sb-target-color: #d29922;
+      --sb-hint-color: #8b949e;
     }
 
     :root {
@@ -652,13 +680,13 @@
       border-radius: 50%;
     }
 
-    /* Live Sandbox Monitor */
+    /* Live Sandbox Monitor (Theme Responsive & High Contrast) */
     .sandbox-monitor {
-      background-color: #0b1322;
-      border: 1px solid rgba(14, 165, 233, 0.3);
+      background-color: var(--sb-monitor-bg);
+      border: 1px solid var(--sb-monitor-border);
       border-radius: 6px;
       padding: 14px 18px;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
 
     .sandbox-monitor-header {
@@ -681,24 +709,26 @@
     }
 
     .sandbox-monitor-hint {
-      font-size: 11px;
-      color: var(--text-muted);
+      font-size: 12px;
+      color: var(--sb-hint-color);
+      font-weight: 500;
     }
 
     .sandbox-instances-grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 8px;
+      gap: 10px;
     }
 
     .sandbox-card {
-      background-color: #080d17;
-      border: 1px solid var(--border-subtle);
-      border-radius: 4px;
-      padding: 10px 14px;
+      background-color: var(--sb-card-bg);
+      border: 1px solid var(--sb-card-border);
+      border-radius: 6px;
+      padding: 12px 16px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
+      box-shadow: var(--card-shadow);
       transition: all 180ms ease;
     }
 
@@ -710,46 +740,49 @@
 
     .sandbox-name {
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
-      color: #38bdf8;
+      color: var(--sb-name-color);
     }
 
     .sandbox-meta-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 8px 14px;
-      font-size: 11px;
-      background: rgba(255, 255, 255, 0.02);
-      padding: 6px 10px;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px 16px;
+      background-color: var(--sb-meta-bg);
+      padding: 8px 12px;
       border-radius: 4px;
-      border: 1px solid var(--border-subtle);
+      border: 1px solid var(--sb-meta-border);
     }
 
     .sandbox-meta-item {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
     }
 
     .sandbox-meta-label {
-      font-size: 10px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: var(--text-muted);
+      color: var(--sb-meta-label);
     }
 
     .sandbox-meta-val {
       font-family: var(--font-mono);
       font-variant-numeric: tabular-nums;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
-      color: var(--text-primary);
+      color: var(--sb-meta-val);
     }
 
     .sandbox-meta-val.pid-badge {
-      color: #34d399;
+      color: var(--sb-pid-color);
+    }
+
+    .sandbox-meta-val.target-badge {
+      color: var(--sb-target-color);
     }
 
     /* Terminal Console Event Feed */
@@ -1738,7 +1771,7 @@
                     </div>
                     <div class="sandbox-meta-item">
                       <span class="sandbox-meta-label">Target Audit</span>
-                      <span class="sandbox-meta-val" style="color: #facc15;">${escapeHtml(target)}</span>
+                      <span class="sandbox-meta-val target-badge">${escapeHtml(target)}</span>
                     </div>
                   </div>
                 </div>
@@ -1750,8 +1783,8 @@
               sbBadge.className = 'badge badge-static';
               sbBadge.innerText = 'Cleaned Up (0 Active)';
               sbGrid.innerHTML = `
-                <div style="font-size: 12px; color: var(--text-muted); font-style: italic; padding: 4px 2px;">
-                  All ephemeral Docker sandboxes were safely stopped and removed (<code style="color: #94a3b8; font-size: 11px;">docker rm -f</code>) upon canary verification completion.
+                <div style="font-size: 13px; color: var(--text-secondary); padding: 4px 2px; line-height: 1.5;">
+                  All ephemeral Docker sandboxes were safely stopped and removed (<code style="color: var(--text-primary); background: var(--bg-code); padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: 12px;">docker rm -f</code>) upon canary verification completion.
                 </div>
               `;
             } else {
