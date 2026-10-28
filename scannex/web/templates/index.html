@@ -1565,9 +1565,17 @@
 
     function pollStatus() {
       if (!activeSessionId) return;
-      fetch(`/api/scan/${activeSessionId}/status`)
-        .then(res => res.json())
+      fetch(/api/scan//status)
+        .then(res => {
+          if (!res.ok) {
+            clearInterval(pollInterval);
+            activeSessionId = null;
+            return null;
+          }
+          return res.json();
+        })
         .then(data => {
+          if (!data) return;
           document.getElementById('current-stage-tag').innerText = data.current_stage || 'RUNNING';
 
           // Update event feed
