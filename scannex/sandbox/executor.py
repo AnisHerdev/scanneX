@@ -104,6 +104,11 @@ except Exception:
 """
         hook_file.write_text(hook_code, encoding="utf-8")
 
+        try:
+            rel_entry = entrypoint.relative_to(self.target_dir)
+        except ValueError:
+            rel_entry = Path(entrypoint.name)
+
         cmd = [
             "docker", "run", "-d",
             "--name", self.container_name,
@@ -116,7 +121,7 @@ except Exception:
             "-e", "FLASK_RUN_PORT=5000",
             "-e", "PYTHONUNBUFFERED=1",
             "scannex-sandbox-base:latest",
-            "python", entrypoint.name, "--port", "5000",
+            "python", rel_entry.as_posix(), "--port", "5000",
         ]
 
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
@@ -162,7 +167,11 @@ except Exception:
         env["FLASK_RUN_PORT"] = str(self.port)
         env["PYTHONUNBUFFERED"] = "1"
 
-        sandbox_entrypoint = self.sandbox_dir / entrypoint.name
+        try:
+            rel_entry = entrypoint.relative_to(self.target_dir)
+            sandbox_entrypoint = self.sandbox_dir / rel_entry
+        except ValueError:
+            sandbox_entrypoint = self.sandbox_dir / entrypoint.name
 
         self.process = subprocess.Popen(
             [sys.executable, str(sandbox_entrypoint), "--port", str(self.port)],
@@ -191,13 +200,42 @@ except Exception:
 
     def _find_entrypoint(self) -> Optional[Path]:
         """Locate primary application file."""
-        for candidate in ("app.py", "main.py", "server.py", "wsgi.py", "run.py"):
-            p = self.target_dir / candidate
+        candidates = ("app.py", "main.py", "server.py", "wsgi.py", "run.py", "manage.py")
+
+        # 1. Primary candidate in root
+        for cand in candidates:
+            p = self.target_dir / cand
             if p.is_file():
                 return p
-        # Any .py file in root
-        py_files = list(self.target_dir.glob("*.py"))
-        return py_files[0] if py_files else None
+
+        # 2. Primary candidate in common subdirectories
+        for sub in ("src", "app", "api", "backend"):
+            sub_dir = self.target_dir / sub
+            if sub_dir.is_dir():
+                for cand in candidates:
+                    p = sub_dir / cand
+                    if p.is_file():
+                        return p
+
+        # 3. Any non-hidden, non-test .py file in root
+        for p in self.target_dir.glob("*.py"):
+            if p.is_file() and not p.name.startswith((".", "test_")) and p.name != "sitecustomize.py":
+                return p
+
+        # 4. Search recursively for standard entrypoint candidates
+        ignored = {"__pycache__", ".venv", "venv", "env", "tests", ".git", ".pytest_cache"}
+        for p in self.target_dir.rglob("*.py"):
+            if p.is_file() and p.name in candidates:
+                if not any(part in ignored or part.startswith(".") for part in p.parts):
+                    return p
+
+        # 5. Fallback to any non-test python file
+        for p in self.target_dir.rglob("*.py"):
+            if p.is_file() and not p.name.startswith("test_") and p.name != "sitecustomize.py":
+                if not any(part in ignored or part.startswith(".") for part in p.parts):
+                    return p
+
+        return None
 
     async def _wait_for_ready(self, timeout_sec: float = 6.0) -> None:
         """Poll the local port until application accepts connections."""
@@ -328,8 +366,14 @@ except Exception:
 
             entrypoint = self._find_entrypoint()
             if entrypoint:
+                try:
+                    rel_entry = entrypoint.relative_to(self.target_dir)
+                    sandbox_entrypoint = self.sandbox_dir / rel_entry
+                except ValueError:
+                    sandbox_entrypoint = self.sandbox_dir / entrypoint.name
+
                 self.process = subprocess.Popen(
-                    [sys.executable, str(self.sandbox_dir / entrypoint.name), "--port", str(self.port)],
+                    [sys.executable, str(sandbox_entrypoint), "--port", str(self.port)],
                     cwd=str(self.sandbox_dir),
                     env=env,
                     stdout=subprocess.PIPE,

@@ -57,6 +57,18 @@ class HunterAgent(BaseAgent):
         if file_paths is None:
             file_paths = list(self.target_dir.rglob("*.py"))
 
+        ignored_parts = {
+            "__pycache__",
+            ".venv",
+            "venv",
+            "env",
+            ".env",
+            "node_modules",
+            ".git",
+            ".pytest_cache",
+            "site-packages",
+        }
+
         findings: list[Finding] = []
         for file_path in file_paths:
             path = Path(file_path)
@@ -64,7 +76,7 @@ class HunterAgent(BaseAgent):
                 continue
 
             # Skip hidden folders, virtualenvs, and pycache
-            if any(part.startswith(".") and part != "." for part in path.parts) or "__pycache__" in path.parts:
+            if any(part in ignored_parts or (part.startswith(".") and part != ".") for part in path.parts):
                 continue
 
             # Skip very large files (> 60KB) to prevent CPU token timeouts

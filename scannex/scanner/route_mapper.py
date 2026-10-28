@@ -26,12 +26,14 @@ class RouteMapper:
     """Analyzes Python AST to discover HTTP route definitions."""
 
     def __init__(self, target_dir: Path | str):
-        self.target_dir = Path(target_dir)
+        self.target_dir = Path(target_dir).resolve()
         self._routes_cache: dict[str, list[RouteContext]] = {}
 
     def scan_file(self, file_path: Path | str) -> list[RouteContext]:
         """Scan a single Python file for Flask/FastAPI route definitions."""
         path = Path(file_path)
+        if not path.is_absolute():
+            path = (self.target_dir / path).resolve()
         if not path.is_file() or not path.suffix == ".py":
             return []
 
@@ -58,7 +60,10 @@ class RouteMapper:
 
     def find_route_for_line(self, file_path: Path | str, line_number: int) -> Optional[RouteContext]:
         """Find the HTTP route enclosing a given line of code."""
-        routes = self.scan_file(file_path)
+        path = Path(file_path)
+        if not path.is_absolute():
+            path = (self.target_dir / path).resolve()
+        routes = self.scan_file(path)
         for r in routes:
             if r.start_line <= line_number <= r.end_line:
                 return r
