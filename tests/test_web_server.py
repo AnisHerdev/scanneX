@@ -1,0 +1,71 @@
+"""Tests for the ScanneX web dashboard server and REST API."""
+
+import io
+import time
+import zipfile
+import pytest
+from scannex.web.server import app
+
+
+@pytest.fixture
+def client():
+    app.config["TESTING"] = True
+    with app.test_client() as c:
+        yield c
+
+
+def test_index_dashboard_serves_html(client):
+    res = client.get("/")
+    assert res.status_code == 200
+    assert b"ScanneX" in res.data
+    assert b"Drop source code .ZIP" in res.data
+    assert b"GitHub Repository" in res.data
+
+
+def test_demo_scan_endpoint(client):
+    res = client.post("/api/scan/demo", json={"mock": True})
+    assert res.status_code == 200
+    data = res.get_json()
+    assert "session_id" in data
+    assert data["status"] == "queued"
+
+    session_id = data["session_id"]
+    time.sleep(1)
+
+    status_res = client.get(f"/api/scan/{session_id}/status")
+    assert status_res.status_code == 200
+    status_data = status_res.get_json()
+    assert status_data["id"] == session_id
+    assert status_data["status"] in ("queued", "running", "completed")
+
+
+def test_upload_invalid_file(client):
+    res = client.post("/api/scan/upload", data={"file": (io.BytesIO(b"not a zip"), "test.txt")})
+    assert res.status_code == 400
+    assert "must be a .zip" in res.get_json()["error"]
+
+
+def test_upload_valid_zip(client):
+    # Create in-memory zip containing a minimal app.py
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as z:
+        z.writestr("app.py", "from flask import Flask\napp = Flask(__name__)\n")
+    zip_buffer.seek(0)
+
+    res = client.post(
+        "/api/scan/upload",
+        data={"file": (zip_buffer, "test_repo.zip"), "mock": "true"},
+        content_type="multipart/form-data",
+    )
+    assert res.status_code == 200
+    data = res.get_json()
+    assert "session_id" in data
+
+
+def test_list_ollama_models(client):
+    res = client.get("/api/ollama/models")
+    assert res.status_code == 200
+    data = res.get_json()
+    assert "available" in data
+    assert "models" in data
+    assert isinstance(data["models"], list)
