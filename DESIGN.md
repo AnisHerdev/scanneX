@@ -187,9 +187,9 @@
 - **Reading Measure**: Clamped to `68ch` for optimal scanning.
 
 ## 4. Components & Interactive States
-- **Top Navigation Bar**: Sticky frosted glass header (`backdrop-filter: blur(12px)`), hairline bottom border, brand logo SVG, and theme toggle.
-- **Segmented Tabs**: Source choice tabs (ZIP, GitHub) with clean hairline borders and smooth active state.
-- **Dropzone**: Hairline dashed border with emerald illumination on dragover/hover.
+- **Top Navigation Bar**: Sticky frosted glass header (`backdrop-filter: blur(12px)`), hairline bottom border, brand logo SVG, secondary utility quick launcher (`Demo CVE App`), and theme toggle.
+- **Segmented Tabs**: Source choice tabs (ZIP, GitHub) with clean hairline borders and smooth active state, decoupled from demo sample launchers.
+- **Dropzone & Staged File State**: Hairline dashed dropzone transitioning upon archive selection into a flat staged file row (`staged-file-row`) displaying file metadata, human-readable size, a "Ready for verification" badge, "Change File" control, and an explicit primary emerald "Start Pipeline Scan" trigger (`#btn-zip-scan`).
 - **Verification Engine Toggle**: 3-way segmented button with crisp active highlight.
 - **Rule Packs Checklist**: Interactive rule cards with subtle active border highlight.
 - **Live Terminal & Activity Log**: Authentic developer console with deep background, monospaced logs, stage pills (`[STATIC]`, `[SANDBOX]`, `[PROBE]`, `[PATCH]`), and copy button.

@@ -14,8 +14,9 @@
 Traditional Static Application Security Testing (SAST) tools generate overwhelming alert fatigue—flooding engineers with speculative warnings where 70%+ turn out to be unreachable, guarded, or false positives. Developers spend weeks manually triaging alerts, and the Mean Time To Remediation (MTTR) stretches into months.
 
 ### The ScanneX Innovations:
-1. **Protected Dual-Track Scanning**:
-   - **Track 1 (Static)**: Deterministic AST & taint rules (Bandit + Semgrep) are preserved intact—never discarded by LLM hallucinations.
+1. **Multi-Track Deterministic & Cognitive Scanning**:
+   - **Track 0 (Deterministic Malware & Artifact Scanner)**: Inspects all repository files and recursive archives (up to depth 3) for standard EICAR test signatures, known malicious hashes (MD5 / SHA-256), webshell backdoors (`eval(base64...)`, reverse shells), and disguised PE/ELF/Mach-O executables masquerading under benign extensions.
+   - **Track 1 (Deterministic Static SAST)**: AST & taint analysis rules (Bandit + Semgrep) are preserved intact—never discarded by LLM hallucinations.
    - **Track 2 (AI Hunter + Adversarial Gatekeeper)**: The AI Hunter scans for complex logic bugs and business-flow flaws. An **Adversarial AI Verifier** immediately cross-examines the Hunter's hypotheses (acting as prosecutor vs. defender) to debunk hallucinations *before* consolidation.
 2. **Deterministic Canary Oracle (Zero-Trust Sandbox)**:
    - When a plausible vulnerability is identified, ScanneX synthesizes an isolated canary probe spec.
@@ -32,21 +33,31 @@ Traditional Static Application Security Testing (SAST) tools generate overwhelmi
 
 ```mermaid
 flowchart TD
-    subgraph S1["1. DUAL-TRACK FIND & ADVERSARIAL VERIFY"]
-        SRC["Source Code (Repo/Folder)"] --> STATIC["Deterministic Static Rules<br/>(Semgrep + Bandit)"]
-        SRC --> HUNTER["AI Hunter Agent<br/>(Logic & Flow Bugs)"]
+    subgraph S0["0. INPUT & SAFE UNPACKING"]
+        INPUT["Target (Repo / Folder / ZIP Archive)"] --> UNPACK["Safe Archive Extractor<br/>(Zip-Bomb & Slip Guard)"]
+    end
+
+    subgraph S1["1. MULTI-TRACK AUDIT ENGINE"]
+        UNPACK --> ALL_FILES["All Files & Binaries<br/>(Any Extension)"]
+        UNPACK --> SRC["Source Code Files<br/>(.py, .php, .js, etc.)"]
+        
+        ALL_FILES --> MALWARE["Track 0: Deterministic Malware Scanner<br/>(EICAR, Hashes, Webshells, Disguised PE/ELF)"]
+        SRC --> STATIC["Track 1: Deterministic Static SAST<br/>(Semgrep + Bandit)"]
+        SRC --> HUNTER["Track 2: AI Hunter Agent<br/>(Logic & Flow Bugs)"]
         
         HUNTER --> VERIFIER{"Adversarial Verifier<br/>(Defender vs Prosecutor)"}
         VERIFIER -->|Disproved| REJ["Status: rejected<br/>(Debunked AI hallucination)"]
         VERIFIER -->|Up-approved| AI_APPROVED["Approved AI Findings"]
         STATIC --> STATIC_FINDINGS["Deterministic Static Findings<br/>(Preserved intact)"]
+        MALWARE --> MALWARE_FINDINGS["Deterministic Malware Findings<br/>(CWE-506, probe_spec=None)"]
     end
 
     subgraph S2["2. CONSOLIDATION & EARLY EXIT"]
-        STATIC_FINDINGS & AI_APPROVED --> CONSOLIDATE["Consolidation Engine"]
+        MALWARE_FINDINGS & STATIC_FINDINGS & AI_APPROVED --> CONSOLIDATE["Consolidation Engine"]
         CONSOLIDATE --> CHECK{"Any Issues<br/>Found?"}
         CHECK -->|No Issues| CLEAN["Clean Exit<br/>(Repository Secure / 0 Alerts)"]
-        CHECK -->|Issues Found| PROBESPEC["Generate Plausible Finding<br/>+ Canary Probe Spec"]
+        CHECK -->|Has Web Flaws| PROBESPEC["Generate Plausible Finding<br/>+ Canary Probe Spec"]
+        CHECK -->|Malware Only| DIRECT_STORE["Direct Store Entry<br/>(status: confirmed_static)"]
     end
 
     subgraph S3["3. CONCURRENT EXECUTION: PROVE & SPECULATIVE FIX"]
@@ -70,8 +81,8 @@ flowchart TD
     end
 
     subgraph S5["5. EVIDENCE-BACKED OUTPUT"]
-        REJ & CLEAN & UNVERIF & FIXED & FLAWED --> STORE["SQLite Findings Store<br/>(Single Source of Truth)"]
-        STORE --> UI["Rich Terminal UI<br/>(Live Diff & Trace)"]
+        REJ & CLEAN & DIRECT_STORE & UNVERIF & FIXED & FLAWED --> STORE["SQLite Findings Store<br/>(Single Source of Truth)"]
+        STORE --> UI["Rich Terminal UI<br/>(Live Diff & Evidence Trace)"]
         STORE --> SARIF["SARIF 2.1.0 Export<br/>(GitHub Code Scanning)"]
         STORE --> REPORT["HTML / Markdown Report"]
     end
@@ -80,6 +91,7 @@ flowchart TD
     style APPLY fill:#bbf,stroke:#333,stroke-width:2px
     style FIXED fill:#bfb,stroke:#333,stroke-width:2px
     style STATIC_FINDINGS fill:#dfd,stroke:#333,stroke-width:2px
+    style MALWARE_FINDINGS fill:#ffcccc,stroke:#990000,stroke-width:2px
     style CLEAN fill:#dfd,stroke:#333,stroke-width:2px
 ```
 

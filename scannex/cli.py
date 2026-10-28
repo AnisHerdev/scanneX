@@ -72,6 +72,7 @@ def scan(target, mock, dockeronly, model, sarif, markdown, html, db, concurrency
         color = {
             "EXTRACT": "bold cyan",
             "INIT": "cyan",
+            "MALWARE_SCAN": "bold red",
             "STATIC_SCAN": "yellow",
             "AI_HUNT": "magenta",
             "ADVERSARIAL_VERIFY": "blue",

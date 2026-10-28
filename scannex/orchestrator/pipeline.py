@@ -15,6 +15,7 @@ from scannex.db.store import FindingsStore
 from scannex.sandbox.executor import SandboxExecutor
 from scannex.scanner.archive_extractor import extract_zip_archive
 from scannex.scanner.bandit_runner import BanditRunner
+from scannex.scanner.malware_runner import MalwareRunner
 from scannex.scanner.semgrep_runner import SemgrepRunner
 
 
@@ -59,6 +60,7 @@ class ScannexOrchestrator:
         self.event_callback = event_callback or (lambda ev: None)
 
         # Scanners and agents
+        self.malware_runner = MalwareRunner(self.target_dir)
         self.bandit_runner = BanditRunner(self.target_dir)
         self.semgrep_runner = SemgrepRunner(
             self.target_dir,
@@ -105,10 +107,19 @@ class ScannexOrchestrator:
             )
 
             # -------------------------------------------------------------
+            # Track 0: Deterministic Malware & Artifact Inspection
+            # -------------------------------------------------------------
+            malware_findings: list[Finding] = []
+            loop = asyncio.get_running_loop()
+            if getattr(self.config, "enable_malware_scan", True):
+                self._emit("MALWARE_SCAN", "Scanning all files and archives for malware signatures, webshells, and embedded threats...")
+                malware_findings = await loop.run_in_executor(None, self.malware_runner.run)
+                self._emit("MALWARE_SCAN", f"Malware scan complete: {len(malware_findings)} threat(s) detected.")
+
+            # -------------------------------------------------------------
             # Track 1: Deterministic Static Scanning (Preserved Intact)
             # -------------------------------------------------------------
             self._emit("STATIC_SCAN", "Executing static AST & taint rules (Bandit + Semgrep)...")
-            loop = asyncio.get_running_loop()
             
             static_tasks = []
             if getattr(self.config, "enable_bandit", True):
@@ -144,7 +155,7 @@ class ScannexOrchestrator:
             # -------------------------------------------------------------
             # Consolidation & Early Exit Check
             # -------------------------------------------------------------
-            all_candidates = static_findings + approved_ai_findings
+            all_candidates = malware_findings + static_findings + approved_ai_findings
             self._emit("CONSOLIDATE", f"Consolidated {len(all_candidates)} actionable findings.")
 
             if not all_candidates:
@@ -171,7 +182,10 @@ class ScannexOrchestrator:
             # If no probe spec was generated, keep as static finding
             if not finding.probe_spec:
                 finding.status = FindingStatus.CONFIRMED_STATIC
-                finding.add_trace("No HTTP route mapped; confirmed via static source-to-sink analysis")
+                if finding.source == "malware_detector":
+                    finding.add_trace("Deterministic malware signature confirmed; quarantined from dynamic sandbox")
+                else:
+                    finding.add_trace("No HTTP route mapped; confirmed via static source-to-sink analysis")
                 self.store.save_finding(finding)
                 return finding
 

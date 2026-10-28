@@ -64,7 +64,9 @@ class TerminalUI:
 
             # Evidence snippet
             evidence = "No dynamic probe"
-            if f.probe_result and f.probe_result.canary_tripped:
+            if f.source == "malware_detector":
+                evidence = f.evidence_trace[0] if f.evidence_trace else "Deterministic signature match"
+            elif f.probe_result and f.probe_result.canary_tripped:
                 evidence = f"Canary Tripped: {f.probe_result.response_snippet or 'Token present'}"
             elif f.verifier_notes:
                 evidence = f.verifier_notes[:45] + "..." if len(f.verifier_notes) > 45 else f.verifier_notes

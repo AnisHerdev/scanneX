@@ -425,6 +425,44 @@
       color: var(--border-strong);
     }
 
+    /* Top Nav Quick Launch Demo Button */
+    .nav-demo-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: var(--btn-sec-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--btn-sec-border);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: var(--font-size-xs);
+      font-weight: var(--fw-semibold);
+      letter-spacing: var(--track-normal);
+      cursor: pointer;
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+      transition: all 150ms ease;
+    }
+
+    .nav-demo-btn:hover:not(:disabled) {
+      background-color: var(--btn-sec-hover);
+      color: var(--text-action);
+      border-color: var(--border-focus);
+    }
+
+    .nav-demo-btn:active:not(:disabled) {
+      background-color: var(--bg-surface-elevated);
+    }
+
+    .nav-demo-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .nav-demo-btn svg {
+      color: var(--accent-primary);
+      flex-shrink: 0;
+    }
+
     /* Theme Switcher Toggle */
     .theme-toggle-btn {
       display: inline-flex;
@@ -799,19 +837,103 @@
       font-weight: var(--fw-medium);
     }
 
-    .btn-benchmark {
-      min-height: 48px;
-      padding: 8px 14px;
-      font-weight: var(--fw-semibold);
-      gap: 8px;
-      align-self: flex-start;
-      flex: 0 1 auto;
-      max-width: 100%;
-      margin-left: auto;
+    .staged-file-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 4px;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      margin-top: 12px;
+      animation: staged-row-enter 180ms ease-out;
     }
 
-    .btn-benchmark svg {
-      flex: 0 0 auto;
+    @keyframes staged-row-enter {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .staged-file-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .staged-file-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 6px;
+      background-color: var(--bg-surface-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-primary);
+      flex-shrink: 0;
+    }
+
+    .staged-file-details {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .staged-file-name {
+      font-size: var(--font-size-base);
+      font-weight: var(--fw-semibold);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 440px;
+    }
+
+    .staged-file-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: var(--font-size-xs);
+      color: var(--text-muted);
+    }
+
+    .staged-file-size {
+      font-variant-numeric: tabular-nums;
+      font-weight: var(--fw-medium);
+      color: var(--text-secondary);
+    }
+
+    .staged-badge {
+      font-size: 11px;
+      font-weight: var(--fw-medium);
+      padding: 1px 7px;
+      border-radius: 4px;
+      background-color: var(--badge-fixed-bg);
+      color: var(--badge-fixed-text);
+      border: 1px solid var(--badge-fixed-border);
+    }
+
+    .staged-file-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 640px) {
+      .staged-file-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .staged-file-actions {
+        justify-content: flex-end;
+      }
+      .staged-file-name {
+        max-width: 100%;
+      }
     }
 
     .spinner {
@@ -1573,6 +1695,14 @@
       <span class="nav-meta-divider nav-meta-text" aria-hidden="true">•</span>
       <span class="nav-meta-text">Deterministic Canary Oracle</span>
       
+      <!-- Benchmark CVE Demo Quick Launcher -->
+      <button class="nav-demo-btn" id="btn-demo-scan" onclick="startDemoScan()" title="Execute packaged vulnerable benchmark CVE app and verify fix in sandbox">
+        <svg id="icon-demo-scan" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <span id="text-demo-scan">Demo CVE App</span>
+      </button>
+
       <!-- Theme Switcher Toggle -->
       <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle visual theme" onclick="toggleTheme()">
         <!-- Sun Icon (shown in dark mode to switch to light) -->
@@ -1615,40 +1745,35 @@
     <div class="card">
       <div class="card-header">
         <h2 class="card-title">Run Security Verification</h2>
-        <p class="card-description">Drop a source repository ZIP, enter a GitHub URL, or launch the retrospective benchmark CVE demo.</p>
+        <p class="card-description">Upload a repository ZIP archive or enter a GitHub repository URL to initiate autonomous AST verification and speculative patching.</p>
       </div>
 
-      <!-- Ingestion Mode Tabs and Benchmark Action -->
+      <!-- Ingestion Mode Tabs -->
       <div class="source-choice-row">
-      <div class="tab-nav" role="tablist" aria-label="Ingestion Source Mode">
-        <button class="tab-btn active" role="tab" id="tab-btn-zip" aria-selected="true" aria-controls="tab-zip" onclick="switchTab('zip')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-            <line x1="12" y1="22.08" x2="12" y2="12"></line>
-          </svg>
-          ZIP Archive
-        </button>
-        <button class="tab-btn" role="tab" id="tab-btn-github" aria-selected="false" aria-controls="tab-github" onclick="switchTab('github')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="6" y1="3" x2="6" y2="15"></line>
-            <circle cx="18" cy="6" r="3"></circle>
-            <circle cx="6" cy="18" r="3"></circle>
-            <path d="M18 9a9 9 0 0 1-9 9"></path>
-          </svg>
-          GitHub Repository
-        </button>
-      </div>
-      <button class="btn btn-secondary btn-benchmark" id="btn-demo-scan" onclick="startDemoScan()" title="Execute packaged vulnerable benchmark CVE app and verify fix in sandbox">
-        <svg id="icon-demo-scan" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-        </svg>
-        <span id="text-demo-scan">Run Benchmark CVE Demo</span>
-      </button>
+        <div class="tab-nav" role="tablist" aria-label="Ingestion Source Mode">
+          <button class="tab-btn active" role="tab" id="tab-btn-zip" aria-selected="true" aria-controls="tab-zip" onclick="switchTab('zip')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            ZIP Archive
+          </button>
+          <button class="tab-btn" role="tab" id="tab-btn-github" aria-selected="false" aria-controls="tab-github" onclick="switchTab('github')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="6" y1="3" x2="6" y2="15"></line>
+              <circle cx="18" cy="6" r="3"></circle>
+              <circle cx="6" cy="18" r="3"></circle>
+              <path d="M18 9a9 9 0 0 1-9 9"></path>
+            </svg>
+            GitHub Repository
+          </button>
+        </div>
       </div>
 
-      <!-- Tab 1: ZIP Dropzone -->
+      <!-- Tab 1: ZIP Dropzone and Staged File Row -->
       <div id="tab-zip" role="tabpanel" aria-labelledby="tab-btn-zip">
+        <!-- Empty / Unstaged Dropzone -->
         <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Drop source code .ZIP archive here or press Enter to browse" onclick="document.getElementById('file-input').click()" onkeydown="handleDropzoneKey(event)">
           <div class="dropzone-icon">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -1660,6 +1785,41 @@
           <div class="dropzone-text" id="dropzone-label">Drop repository .ZIP archive here, or click to browse</div>
           <div class="dropzone-sub">Supports Python, PHP, JavaScript, Go, Java, and GitHub Actions workflows</div>
           <input type="file" id="file-input" accept=".zip" aria-label="Choose ZIP file" style="display: none;" onchange="handleFileSelect(event)" />
+        </div>
+
+        <!-- Staged File Row (Shown when file is selected) -->
+        <div class="staged-file-row" id="zip-staged-panel" style="display: none;" role="region" aria-label="Staged repository ZIP archive">
+          <div class="staged-file-info">
+            <div class="staged-file-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </div>
+            <div class="staged-file-details">
+              <div class="staged-file-name" id="staged-file-name" title="Staged file">repository.zip</div>
+              <div class="staged-file-meta">
+                <span id="staged-file-size" class="staged-file-size">0 B</span>
+                <span class="staged-badge">Ready for verification</span>
+              </div>
+            </div>
+          </div>
+          <div class="staged-file-actions">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="clearStagedZip()" title="Select a different ZIP archive">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              <span>Change File</span>
+            </button>
+            <button type="button" class="btn" id="btn-zip-scan" onclick="startZipScan()">
+              <svg id="icon-zip-scan" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              <span id="text-zip-scan">Start Pipeline Scan</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -2074,6 +2234,55 @@
       }
     }
 
+    // Helper to format file sizes
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    let stagedZipFile = null;
+
+    function stageZipFile(file) {
+      dismissAlert();
+      if (!file.name.toLowerCase().endsWith('.zip')) {
+        showAlert('Unsupported file format: please upload a .zip archive containing source code.', 'error');
+        return;
+      }
+      stagedZipFile = file;
+      const nameEl = document.getElementById('staged-file-name');
+      const sizeEl = document.getElementById('staged-file-size');
+      if (nameEl) {
+        nameEl.innerText = file.name;
+        nameEl.title = file.name;
+      }
+      if (sizeEl) sizeEl.innerText = formatBytes(file.size);
+
+      const dropEl = document.getElementById('dropzone');
+      if (dropEl) dropEl.style.display = 'none';
+
+      const panelEl = document.getElementById('zip-staged-panel');
+      if (panelEl) panelEl.style.display = 'flex';
+
+      const scanBtn = document.getElementById('btn-zip-scan');
+      if (scanBtn) {
+        scanBtn.disabled = false;
+        scanBtn.focus();
+      }
+    }
+
+    function clearStagedZip() {
+      stagedZipFile = null;
+      const fileInput = document.getElementById('file-input');
+      if (fileInput) fileInput.value = '';
+      const panelEl = document.getElementById('zip-staged-panel');
+      if (panelEl) panelEl.style.display = 'none';
+      const dropEl = document.getElementById('dropzone');
+      if (dropEl) dropEl.style.display = 'block';
+    }
+
     // Drag and drop handlers
     const dropzone = document.getElementById('dropzone');
     dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
@@ -2082,15 +2291,27 @@
       e.preventDefault();
       dropzone.classList.remove('dragover');
       if (e.dataTransfer.files.length > 0) {
-        uploadFile(e.dataTransfer.files[0]);
+        stageZipFile(e.dataTransfer.files[0]);
       }
     });
+
+    const stagedPanel = document.getElementById('zip-staged-panel');
+    if (stagedPanel) {
+      stagedPanel.addEventListener('dragover', (e) => { e.preventDefault(); stagedPanel.classList.add('dragover'); });
+      stagedPanel.addEventListener('dragleave', () => stagedPanel.classList.remove('dragover'));
+      stagedPanel.addEventListener('drop', (e) => {
+        e.preventDefault();
+        stagedPanel.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+          stageZipFile(e.dataTransfer.files[0]);
+        }
+      });
+    }
 
     function handleFileSelect(e) {
       if (e.target.files.length > 0) {
         const file = e.target.files[0];
-        e.target.value = '';
-        uploadFile(file);
+        stageZipFile(file);
       }
     }
 
@@ -2232,16 +2453,20 @@
       };
     }
 
-    function uploadFile(file) {
+    function startZipScan() {
       dismissAlert();
-      if (!file.name.toLowerCase().endsWith('.zip')) {
-        showAlert('Unsupported file format: please upload a .zip archive containing source code.', 'error');
+      if (!stagedZipFile) {
+        showAlert('Please choose or drop a repository .zip archive first.', 'warn');
         return;
       }
-      document.getElementById('dropzone-label').innerText = `Uploading & analyzing: ${file.name}...`;
+      const btn = document.getElementById('btn-zip-scan');
+      const txt = document.getElementById('text-zip-scan');
+      if (btn) btn.disabled = true;
+      if (txt) txt.innerText = 'Uploading & analyzing...';
+
       const config = getEngineConfig();
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', stagedZipFile);
       formData.append('mock', config.mock ? 'true' : 'false');
       formData.append('model', config.model);
       formData.append('docker_only', config.docker_only ? 'true' : 'false');
@@ -2249,20 +2474,31 @@
       formData.append('enable_bandit', config.enable_bandit ? 'true' : 'false');
       formData.append('scan_workflows', config.scan_workflows ? 'true' : 'false');
 
+      const fileName = stagedZipFile.name;
+
       fetch('/api/scan/upload', { method: 'POST', body: formData })
         .then(res => res.json())
         .then(data => {
+          if (btn) btn.disabled = false;
+          if (txt) txt.innerText = 'Start Pipeline Scan';
           if (data.session_id) {
-            initScanTracking(data.session_id, file.name);
+            clearStagedZip();
+            initScanTracking(data.session_id, fileName);
           } else {
             showAlert('Upload failed: ' + (data.error || 'Server encountered an unexpected error processing archive.'), 'error');
-            document.getElementById('dropzone-label').innerText = 'Drop repository .ZIP archive here, or click to browse';
           }
         })
         .catch(err => {
+          if (btn) btn.disabled = false;
+          if (txt) txt.innerText = 'Start Pipeline Scan';
           showAlert('Network error communicating with server: ' + err.message + '. Please check your connection.', 'error');
-          document.getElementById('dropzone-label').innerText = 'Drop repository .ZIP archive here, or click to browse';
         });
+    }
+
+    // Retain uploadFile for programmatic API compatibility
+    function uploadFile(file) {
+      stageZipFile(file);
+      startZipScan();
     }
 
     function startGithubScan() {
@@ -2316,8 +2552,8 @@
       dismissAlert();
       const btn = document.getElementById('btn-demo-scan');
       const txt = document.getElementById('text-demo-scan');
-      btn.disabled = true;
-      txt.innerText = 'Launching benchmark sandbox...';
+      if (btn) btn.disabled = true;
+      if (txt) txt.innerText = 'Launching demo sandbox...';
 
       const config = getEngineConfig();
       fetch('/api/scan/demo', {
@@ -2334,15 +2570,15 @@
       })
       .then(res => res.json())
       .then(data => {
-        btn.disabled = false;
-        txt.innerText = 'Run Benchmark CVE Demo';
+        if (btn) btn.disabled = false;
+        if (txt) txt.innerText = 'Demo CVE App';
         if (data.session_id) {
           initScanTracking(data.session_id, 'vulnerable_flask_app (Pre-Patch Benchmark)');
         }
       })
       .catch(err => {
-        btn.disabled = false;
-        txt.innerText = 'Run Benchmark CVE Demo';
+        if (btn) btn.disabled = false;
+        if (txt) txt.innerText = 'Demo CVE App';
         showAlert('Failed to launch benchmark CVE demo: ' + err.message + '. Verify sandbox permissions.', 'error');
       });
     }

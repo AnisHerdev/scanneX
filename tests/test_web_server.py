@@ -162,3 +162,38 @@ def test_upload_with_custom_rule_checklist(client):
     assert "session_id" in data
     assert data["status"] == "queued"
 
+
+
+def test_upload_and_scan_eicar_zip_detects_malware(client):
+    """Ensure a ZIP containing eicar.com is properly flagged as MALWARE / CWE-506 in the web upload."""
+    import zipfile
+    from scannex.scanner.malware_runner import EICAR_EXACT_BYTES
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as z:
+        z.writestr("eicar.com", EICAR_EXACT_BYTES)
+    zip_buffer.seek(0)
+
+    res = client.post(
+        "/api/scan/upload",
+        data={"file": (zip_buffer, "eicar_test.zip"), "mock": "true"},
+        content_type="multipart/form-data",
+    )
+    assert res.status_code == 200
+    session_id = res.get_json()["session_id"]
+
+    completed = False
+    for _ in range(30):
+        time.sleep(0.5)
+        status_res = client.get(f"/api/scan/{session_id}/status")
+        data = status_res.get_json()
+        if data["status"] in ("completed", "failed"):
+            completed = True
+            assert data["status"] == "completed"
+            assert len(data["findings"]) == 1
+            finding = data["findings"][0]
+            assert finding["vuln_type"] == "MALWARE"
+            assert finding["cwe"] == "CWE-506"
+            assert finding["status"] == "confirmed_static"
+            break
+    assert completed, "Scan session did not complete in time"

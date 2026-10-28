@@ -92,7 +92,13 @@ def get_source_summary(target_dir: Path) -> tuple[int, str]:
     files = [p for p in target_dir.rglob("*") if p.is_file() and p.suffix.lower() in src_exts]
     total = len(files)
     if total == 0:
-        return 0, "0 source files"
+        all_artifacts = [
+            p for p in target_dir.rglob("*")
+            if p.is_file() and not any(part in {"__pycache__", ".git", ".venv", "node_modules"} for part in p.parts)
+        ]
+        if all_artifacts:
+            return 0, f"0 source files ({len(all_artifacts)} artifacts/binaries)"
+        return 0, "0 source files" 
 
     php_count = sum(1 for p in files if p.suffix.lower() == ".php")
     py_count = sum(1 for p in files if p.suffix.lower() == ".py")

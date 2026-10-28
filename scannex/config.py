@@ -36,6 +36,7 @@ class ScannexConfig(BaseModel):
         default_factory=lambda: ["p/owasp-top-ten", "p/security-audit", "p/php"]
     )
     enable_bandit: bool = Field(default=True)
+    enable_malware_scan: bool = Field(default=True)
     scan_workflows: bool = Field(default=False)
     
     @classmethod
