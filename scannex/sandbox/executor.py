@@ -11,7 +11,7 @@ import tempfile
 import time
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 import requests
 from scannex.config import ScannexConfig
 from scannex.db.models import PatchSpec, ProbeResult, ProbeSpec
@@ -23,10 +23,16 @@ logger = logging.getLogger(__name__)
 class SandboxExecutor:
     """Manages ephemeral application sandbox and executes canary probes."""
 
-    def __init__(self, target_dir: Path | str, config: Optional[ScannexConfig] = None):
+    def __init__(
+        self,
+        target_dir: Path | str,
+        config: Optional[ScannexConfig] = None,
+        event_callback: Optional[Callable[[str, str], None]] = None,
+    ):
         self.target_dir = Path(target_dir).resolve()
         self.config = config or ScannexConfig.from_env()
         self.oracle = DeterministicOracle()
+        self.event_callback = event_callback or (lambda stage, msg: None)
         self.sandbox_dir: Optional[Path] = None
         self.process: Optional[subprocess.Popen] = None
         self.container_name: Optional[str] = None
@@ -116,6 +122,10 @@ except Exception:
             raise RuntimeError(f"Docker run failed: {res.stderr}")
 
         await self._wait_for_ready()
+        self.event_callback(
+            "DOCKER_SANDBOX",
+            f"Booted container '{self.container_name}' (Image: scannex-sandbox-base:latest) on port {self.port}",
+        )
 
     async def _start_subprocess(self, entrypoint: Path) -> None:
         """Fallback runner executing isolated Python subprocess."""
@@ -136,6 +146,7 @@ except Exception:
         )
 
         await self._wait_for_ready()
+        self.event_callback("SUBPROCESS_SANDBOX", f"Booted subprocess sandbox on port {self.port}")
 
     def _find_entrypoint(self) -> Optional[Path]:
         """Locate primary application file."""
@@ -256,6 +267,7 @@ except Exception:
             # Hot-restart Docker container with mounted patched code
             subprocess.run(["docker", "restart", self.container_name], check=True, capture_output=True, timeout=10)
             await self._wait_for_ready()
+            self.event_callback("DOCKER_SANDBOX", f"Hot-restarted container '{self.container_name}' with patched code")
         else:
             self.stop_process()
             self.port = self.find_free_port()
@@ -301,10 +313,12 @@ except Exception:
     def teardown(self) -> None:
         """Cleanly shutdown sandbox container or process and remove ephemeral directory."""
         if self.container_name:
+            c_name = self.container_name
             try:
                 subprocess.run(["docker", "rm", "-f", self.container_name], capture_output=True, timeout=5)
             except Exception:
                 pass
+            self.event_callback("DOCKER_SANDBOX", f"Cleanly stopped & removed container '{c_name}'")
             self.container_name = None
 
         self.stop_process()

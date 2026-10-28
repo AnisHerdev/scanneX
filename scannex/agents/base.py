@@ -3,8 +3,12 @@
 import json
 import logging
 import os
+import warnings
 from typing import Any, Optional
 from scannex.config import ScannexConfig
+
+# Suppress benign internal LiteLLM coroutine lifecycle warnings in Python 3.14
+warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*coroutine.*transform_then_dispatch.*")
 
 logger = logging.getLogger(__name__)
 

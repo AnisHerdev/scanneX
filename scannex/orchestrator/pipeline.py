@@ -117,7 +117,11 @@ class ScannexOrchestrator:
                 finding,
             )
 
-            sandbox = SandboxExecutor(self.target_dir, self.config)
+            sandbox = SandboxExecutor(
+                self.target_dir,
+                self.config,
+                event_callback=lambda stage, msg: self._emit(stage, msg, finding),
+            )
             try:
                 # Concurrent launch: don't wait for sandbox boot before generating patch!
                 sandbox_task = asyncio.create_task(sandbox.execute_probe(finding.probe_spec))
