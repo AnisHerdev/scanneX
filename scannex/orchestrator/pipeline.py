@@ -105,7 +105,15 @@ class ScannexOrchestrator:
             loop = asyncio.get_running_loop()
             
             bandit_findings = await loop.run_in_executor(None, self.bandit_runner.run)
+            if isinstance(bandit_findings, str):
+                self._emit("STATIC_SCAN", f"Bandit execution warning: {bandit_findings}")
+                bandit_findings = []
+
             semgrep_findings = await loop.run_in_executor(None, self.semgrep_runner.run)
+            if isinstance(semgrep_findings, str):
+                self._emit("STATIC_SCAN", f"Semgrep execution warning: {semgrep_findings}")
+                semgrep_findings = []
+
             static_findings = bandit_findings + semgrep_findings
             self._emit("STATIC_SCAN", f"Static scan complete: {len(static_findings)} rule findings identified.")
 

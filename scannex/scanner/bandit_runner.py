@@ -40,8 +40,13 @@ class BanditRunner:
         self.route_mapper = RouteMapper(self.target_dir)
 
     def run(self) -> list[Finding]:
-        """Run Bandit on the target directory and return findings."""
+        """Run Bandit on the target directory and return findings.
+        
+        If Bandit fails to execute (did not run at all), prints 'Execution Failure'
+        and returns an empty list.
+        """
         if not self.target_dir.exists():
+            print("Execution Failure")
             return []
 
         # Run bandit via python -m bandit to avoid blocked .exe policies
@@ -63,12 +68,20 @@ class BanditRunner:
                 text=True,
                 timeout=30,
             )
-            # Bandit returns exit code 1 if issues are found, which is expected
+            # Bandit returns exit code 0 (clean) or 1 (issues found).
+            # Any other returncode indicates execution failure.
+            if result.returncode not in (0, 1):
+                print("Execution Failure")
+                return []
+
             raw_json = result.stdout.strip()
             if not raw_json:
+                print("Execution Failure")
                 return []
+
             data = json.loads(raw_json)
         except Exception:
+            print("Execution Failure")
             return []
 
         findings: list[Finding] = []

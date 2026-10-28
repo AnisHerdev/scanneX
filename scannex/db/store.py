@@ -118,7 +118,7 @@ class FindingsStore:
             cur = conn.execute(query, params)
             return [Finding.model_validate_json(row["data_json"]) for row in cur.fetchall()]
 
-    def get_summary(self) -> dict[str, Any]:
+    def get_summary(self) -> dict[str, any]:
         """Compute summary counts by status and severity."""
         with self._get_connection() as conn:
             status_counts = {}
