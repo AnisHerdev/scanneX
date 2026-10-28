@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 from typing import Any, Optional
 from scannex.config import ScannexConfig
 
@@ -34,7 +35,12 @@ class BaseAgent:
                     {"role": "user", "content": user_prompt},
                 ],
                 "temperature": 0.1,
+                "timeout": 60,
             }
+
+            # Configure Ollama IPv4 host to avoid Windows IPv6 resolution hang
+            if self.config.model_name.startswith("ollama/"):
+                kwargs["api_base"] = os.getenv("OLLAMA_API_BASE", "http://127.0.0.1:11434")
 
             if response_format:
                 kwargs["response_format"] = response_format

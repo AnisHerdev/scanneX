@@ -76,13 +76,45 @@ Full File Context:
         replace_block = ""
         explanation = "Automated remediation patch"
 
-        try:
-            data = json.loads(text)
-            search_block = data.get("search_block", "")
-            replace_block = data.get("replace_block", "")
-            explanation = data.get("explanation", explanation)
-        except Exception:
-            pass
+        # Check in markdown blocks
+        if "```" in text:
+            parts = text.split("```")
+            for p in parts:
+                cleaned = p.strip()
+                if cleaned.startswith("json"):
+                    cleaned = cleaned[4:].strip()
+                try:
+                    data = json.loads(cleaned)
+                    if isinstance(data, dict):
+                        search_block = data.get("search_block", "")
+                        replace_block = data.get("replace_block", "")
+                        explanation = data.get("explanation", explanation)
+                        break
+                except Exception:
+                    continue
+
+        # Look for { ... }
+        if not search_block:
+            start = text.find("{")
+            end = text.rfind("}")
+            if start != -1 and end > start:
+                try:
+                    data = json.loads(text[start:end+1])
+                    if isinstance(data, dict):
+                        search_block = data.get("search_block", "")
+                        replace_block = data.get("replace_block", "")
+                        explanation = data.get("explanation", explanation)
+                except Exception:
+                    pass
+
+        if not search_block:
+            try:
+                data = json.loads(text)
+                search_block = data.get("search_block", "")
+                replace_block = data.get("replace_block", "")
+                explanation = data.get("explanation", explanation)
+            except Exception:
+                pass
 
         # Fallback to sink replacement if search block is empty
         if not search_block and finding.sink_code:

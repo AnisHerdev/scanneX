@@ -79,15 +79,43 @@ Full File Context:
         return result
 
     def _parse_result(self, text: str) -> VerificationResult:
-        """Parse JSON verification output."""
+        """Parse JSON verification output with fence & brace resilience."""
         text = text.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].startswith("```"):
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
+
+        # Check in markdown blocks
+        if "```" in text:
+            parts = text.split("```")
+            for p in parts:
+                cleaned = p.strip()
+                if cleaned.startswith("json"):
+                    cleaned = cleaned[4:].strip()
+                try:
+                    data = json.loads(cleaned)
+                    if isinstance(data, dict):
+                        return VerificationResult(
+                            up_approved=bool(data.get("up_approved", True)),
+                            confidence=float(data.get("confidence", 0.9)),
+                            reason=str(data.get("reason", "Verified plausible vulnerability")),
+                            sanitizer_found=data.get("sanitizer_found"),
+                        )
+                except Exception:
+                    continue
+
+        # Look for { ... }
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end > start:
+            try:
+                data = json.loads(text[start:end+1])
+                if isinstance(data, dict):
+                    return VerificationResult(
+                        up_approved=bool(data.get("up_approved", True)),
+                        confidence=float(data.get("confidence", 0.9)),
+                        reason=str(data.get("reason", "Verified plausible vulnerability")),
+                        sanitizer_found=data.get("sanitizer_found"),
+                    )
+            except Exception:
+                pass
 
         try:
             data = json.loads(text)

@@ -82,15 +82,35 @@ class HunterAgent(BaseAgent):
         return findings
 
     def _parse_json_response(self, text: str) -> list[dict]:
-        """Extract JSON array from LLM response."""
+        """Extract JSON array from LLM response with fence & bracket resilience."""
         text = text.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].startswith("```"):
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
+
+        # Try parsing within markdown fences
+        if "```" in text:
+            parts = text.split("```")
+            for p in parts:
+                cleaned = p.strip()
+                if cleaned.startswith("json"):
+                    cleaned = cleaned[4:].strip()
+                try:
+                    data = json.loads(cleaned)
+                    if isinstance(data, list):
+                        return data
+                    elif isinstance(data, dict):
+                        return data.get("findings", [data])
+                except Exception:
+                    continue
+
+        # Try finding [ ... ]
+        start = text.find("[")
+        end = text.rfind("]")
+        if start != -1 and end > start:
+            try:
+                data = json.loads(text[start:end+1])
+                if isinstance(data, list):
+                    return data
+            except Exception:
+                pass
 
         try:
             data = json.loads(text)

@@ -1,6 +1,7 @@
 """Sandbox execution engine supporting Docker and ephemeral subprocess environments."""
 
 import asyncio
+import logging
 import os
 import shutil
 import socket
@@ -8,12 +9,15 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 from pathlib import Path
 from typing import Optional
 import requests
 from scannex.config import ScannexConfig
 from scannex.db.models import PatchSpec, ProbeResult, ProbeSpec
 from scannex.sandbox.oracle import DeterministicOracle
+
+logger = logging.getLogger(__name__)
 
 
 class SandboxExecutor:
@@ -25,6 +29,7 @@ class SandboxExecutor:
         self.oracle = DeterministicOracle()
         self.sandbox_dir: Optional[Path] = None
         self.process: Optional[subprocess.Popen] = None
+        self.container_name: Optional[str] = None
         self.port: int = 0
         self.base_url: str = ""
         self.sandbox_type: str = "subprocess"
@@ -46,8 +51,7 @@ class SandboxExecutor:
             return s.getsockname()[1]
 
     async def start(self) -> None:
-        """Spin up the isolated application sandbox."""
-        # Find entrypoint
+        """Spin up the isolated application sandbox (Docker first, subprocess fallback)."""
         entrypoint = self._find_entrypoint()
         if not entrypoint:
             raise RuntimeError(f"No runnable Python entrypoint (app.py, main.py) found in {self.target_dir}")
@@ -59,6 +63,59 @@ class SandboxExecutor:
         self.port = self.find_free_port()
         self.base_url = f"http://127.0.0.1:{self.port}"
 
+        if self.is_docker_available():
+            try:
+                await self._start_docker(entrypoint)
+                return
+            except Exception as e:
+                logger.warning(f"Docker sandbox startup failed ({e}); falling back to subprocess.")
+
+        await self._start_subprocess(entrypoint)
+
+    async def _start_docker(self, entrypoint: Path) -> None:
+        """Launch isolated Docker container mounting the ephemeral sandbox copy."""
+        self.container_name = f"scannex_box_{uuid.uuid4().hex[:8]}"
+        self.sandbox_type = "docker"
+
+        # Inject auto-bind hook so any Flask/WSGI app binds to 0.0.0.0 inside the container
+        hook_file = self.sandbox_dir / "sitecustomize.py"
+        hook_code = """
+try:
+    import flask
+    _orig_run = flask.Flask.run
+    def _patched_run(self, *args, **kwargs):
+        kwargs['host'] = '0.0.0.0'
+        return _orig_run(self, *args, **kwargs)
+    flask.Flask.run = _patched_run
+except Exception:
+    pass
+"""
+        hook_file.write_text(hook_code, encoding="utf-8")
+
+        cmd = [
+            "docker", "run", "-d",
+            "--name", self.container_name,
+            "-p", f"{self.port}:5000",
+            "-v", f"{self.sandbox_dir.as_posix()}:/app",
+            "-w", "/app",
+            "-e", "PYTHONPATH=/app",
+            "-e", "PORT=5000",
+            "-e", "FLASK_RUN_HOST=0.0.0.0",
+            "-e", "FLASK_RUN_PORT=5000",
+            "-e", "PYTHONUNBUFFERED=1",
+            "scannex-sandbox-base:latest",
+            "python", entrypoint.name, "--port", "5000",
+        ]
+
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        if res.returncode != 0:
+            raise RuntimeError(f"Docker run failed: {res.stderr}")
+
+        await self._wait_for_ready()
+
+    async def _start_subprocess(self, entrypoint: Path) -> None:
+        """Fallback runner executing isolated Python subprocess."""
+        self.sandbox_type = "subprocess"
         env = os.environ.copy()
         env["PORT"] = str(self.port)
         env["FLASK_RUN_PORT"] = str(self.port)
@@ -66,7 +123,6 @@ class SandboxExecutor:
 
         sandbox_entrypoint = self.sandbox_dir / entrypoint.name
 
-        # Launch background application process
         self.process = subprocess.Popen(
             [sys.executable, str(sandbox_entrypoint), "--port", str(self.port)],
             cwd=str(self.sandbox_dir),
@@ -75,7 +131,6 @@ class SandboxExecutor:
             stderr=subprocess.PIPE,
         )
 
-        # Wait for application to become responsive
         await self._wait_for_ready()
 
     def _find_entrypoint(self) -> Optional[Path]:
@@ -192,25 +247,30 @@ class SandboxExecutor:
         target_file.write_text(patched_content, encoding="utf-8")
         patch.applied_successfully = True
 
-        # Restart sandbox process with the patched code
-        self.stop_process()
-        self.port = self.find_free_port()
-        self.base_url = f"http://127.0.0.1:{self.port}"
-
-        env = os.environ.copy()
-        env["PORT"] = str(self.port)
-        env["FLASK_RUN_PORT"] = str(self.port)
-
-        entrypoint = self._find_entrypoint()
-        if entrypoint:
-            self.process = subprocess.Popen(
-                [sys.executable, str(self.sandbox_dir / entrypoint.name), "--port", str(self.port)],
-                cwd=str(self.sandbox_dir),
-                env=env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
+        # Restart sandbox with the patched code
+        if self.container_name:
+            # Hot-restart Docker container with mounted patched code
+            subprocess.run(["docker", "restart", self.container_name], check=True, capture_output=True, timeout=10)
             await self._wait_for_ready()
+        else:
+            self.stop_process()
+            self.port = self.find_free_port()
+            self.base_url = f"http://127.0.0.1:{self.port}"
+
+            env = os.environ.copy()
+            env["PORT"] = str(self.port)
+            env["FLASK_RUN_PORT"] = str(self.port)
+
+            entrypoint = self._find_entrypoint()
+            if entrypoint:
+                self.process = subprocess.Popen(
+                    [sys.executable, str(self.sandbox_dir / entrypoint.name), "--port", str(self.port)],
+                    cwd=str(self.sandbox_dir),
+                    env=env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                await self._wait_for_ready()
 
         # Re-fire probe!
         retest_result = await self.execute_probe(probe_spec)
@@ -235,7 +295,14 @@ class SandboxExecutor:
             self.process = None
 
     def teardown(self) -> None:
-        """Cleanly shutdown sandbox process and remove ephemeral directory."""
+        """Cleanly shutdown sandbox container or process and remove ephemeral directory."""
+        if self.container_name:
+            try:
+                subprocess.run(["docker", "rm", "-f", self.container_name], capture_output=True, timeout=5)
+            except Exception:
+                pass
+            self.container_name = None
+
         self.stop_process()
         if self.sandbox_dir and self.sandbox_dir.exists():
             try:
