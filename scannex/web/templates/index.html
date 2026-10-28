@@ -593,8 +593,9 @@
         <div class="options-group">
           <span>Analysis Engine:</span>
           <select id="engine-select" class="select-input">
+            <option value="ollama" selected>Local Ollama (llama3.2:1b) — Live AI Model</option>
+            <option value="gemini">Google Gemini (gemini-2.5-flash)</option>
             <option value="mock">Fast Evaluation (Deterministic Mock)</option>
-            <option value="ollama">Local Ollama (llama3.2:1b)</option>
           </select>
         </div>
         <button class="btn btn-secondary" onclick="startDemoScan()">⚡ Run Benchmark CVE Demo</button>
@@ -694,17 +695,28 @@
       }
     }
 
+    function getEngineConfig() {
+      const engine = document.getElementById('engine-select').value;
+      if (engine === 'gemini') {
+        return { mock: false, model: 'gemini/gemini-2.5-flash' };
+      } else if (engine === 'ollama') {
+        return { mock: false, model: 'ollama/llama3.2:1b' };
+      } else {
+        return { mock: true, model: 'ollama/llama3.2:1b' };
+      }
+    }
+
     function uploadFile(file) {
       if (!file.name.endsWith('.zip')) {
         alert('Please upload a .ZIP archive.');
         return;
       }
       document.getElementById('dropzone-label').innerText = `Uploading & scanning: ${file.name}...`;
+      const config = getEngineConfig();
       const formData = new FormData();
       formData.append('file', file);
-      const isMock = document.getElementById('engine-select').value === 'mock';
-      formData.append('mock', isMock ? 'true' : 'false');
-      formData.append('model', 'ollama/llama3.2:1b');
+      formData.append('mock', config.mock ? 'true' : 'false');
+      formData.append('model', config.model);
 
       fetch('/api/scan/upload', { method: 'POST', body: formData })
         .then(res => res.json())
@@ -723,12 +735,12 @@
         alert('Please enter a GitHub repository URL.');
         return;
       }
-      const isMock = document.getElementById('engine-select').value === 'mock';
+      const config = getEngineConfig();
 
       fetch('/api/scan/github', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url, mock: isMock, model: 'ollama/llama3.2:1b' })
+        body: JSON.stringify({ url: url, mock: config.mock, model: config.model })
       })
       .then(res => res.json())
       .then(data => {
@@ -741,11 +753,11 @@
     }
 
     function startDemoScan() {
-      const isMock = document.getElementById('engine-select').value === 'mock';
+      const config = getEngineConfig();
       fetch('/api/scan/demo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mock: isMock, model: 'ollama/llama3.2:1b' })
+        body: JSON.stringify({ mock: config.mock, model: config.model })
       })
       .then(res => res.json())
       .then(data => {
