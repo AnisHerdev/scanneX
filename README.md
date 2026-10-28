@@ -114,7 +114,14 @@ uv venv .venv
 uv pip install -e .
 ```
 
-### 2. Run the One-Command Retrospective Demo
+### 2. Launch the Interactive Web Dashboard
+Run the dashboard website to drag-and-drop a ZIP file or clone any GitHub repository:
+```bash
+python -m scannex.cli dashboard
+```
+Opens `http://127.0.0.1:8080/` in your browser with real-time pipeline event streams, evidence traces, and interactive patch diff inspection.
+
+### 3. Run the One-Command Retrospective Demo CLI
 Evaluate ScanneX cold on our bundled pre-patch benchmark application (featuring authentic SQLi, Command Injection, and SSTI vulnerabilities):
 ```bash
 python -m scannex.cli demo

@@ -4,6 +4,7 @@ import asyncio
 import os
 from pathlib import Path
 import sys
+import threading
 
 # Ensure UTF-8 output on Windows consoles
 if hasattr(sys.stdout, "reconfigure"):
@@ -186,6 +187,23 @@ def report(db):
         if f.status == FindingStatus.VERIFIED_FIXED and f.patch_spec:
             console.print("\n")
             ui.render_patch_diff(f)
+
+
+@main.command()
+@click.option("--port", default=8080, help="Port to bind the web dashboard to")
+@click.option("--host", default="127.0.0.1", help="Host interface to bind to")
+@click.option("--open-browser/--no-open-browser", default=True, help="Automatically open browser")
+def dashboard(port, host, open_browser):
+    """Launch the interactive web dashboard for drag-and-drop ZIP and GitHub scans."""
+    ui.print_banner()
+    console.print(f"[bold cyan]Launching ScanneX Web Dashboard at:[/bold cyan] [underline green]http://{host}:{port}/[/underline green]\n")
+    
+    if open_browser:
+        import webbrowser
+        threading.Timer(1.2, lambda: webbrowser.open(f"http://{host}:{port}/")).start()
+
+    from scannex.web import run_web_dashboard
+    run_web_dashboard(host=host, port=port)
 
 
 if __name__ == "__main__":

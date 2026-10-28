@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScanneX - Autonomous AppSec Verification & Speculative Remediation</title>
+  <style>
+    :root {
+      --bg-canvas: #090d16;
+      --bg-surface: #101726;
+      --bg-surface-elevated: #162032;
+      --bg-surface-hover: #1e293b;
+      --border-subtle: #1e293b;
+      --border-strong: #334155;
+      --border-focus: #3b82f6;
+
+      --text-primary: #ffffff;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+
+      --accent-blue: #1d4ed8;
+      --accent-blue-hover: #1e40af;
+
+      --badge-fixed-bg: #064e3b;
+      --badge-fixed-text: #34d399;
+      --badge-fixed-border: #059669;
+
+      --badge-dynamic-bg: #450a0a;
+      --badge-dynamic-text: #f87171;
+      --badge-dynamic-border: #dc2626;
+
+      --badge-static-bg: #451a03;
+      --badge-static-text: #fbbf24;
+      --badge-static-border: #d97706;
+
+      --badge-unverified-bg: #1e293b;
+      --badge-unverified-text: #94a3b8;
+      --badge-unverified-border: #475569;
+
+      --badge-rejected-bg: #1e1b4b;
+      --badge-rejected-text: #a5b4fc;
+      --badge-rejected-border: #4338ca;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+      --font-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 80px;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      background-color: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 28px;
+      height: 28px;
+      background: #1e3a8a;
+      border: 1px solid #2563eb;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      color: #ffffff;
+    }
+
+    .brand-title {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .brand-tag {
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--bg-surface-elevated);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    .nav-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Layout Container */
+    .container {
+      max-width: 1120px;
+      margin: 36px auto;
+      padding: 0 24px;
+    }
+
+    /* Ingestion Panel */
+    .card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .card-header {
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+
+    .card-description {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* Tabs */
+    .tab-nav {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 20px;
+      padding-bottom: 8px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+
+    .tab-btn.active {
+      background-color: var(--bg-surface-elevated);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    /* Dropzone */
+    .dropzone {
+      border: 2px dashed var(--border-strong);
+      border-radius: 8px;
+      padding: 44px 20px;
+      text-align: center;
+      cursor: pointer;
+      background-color: var(--bg-canvas);
+      transition: all 150ms ease;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent-blue);
+      background-color: var(--bg-surface-elevated);
+    }
+
+    .dropzone-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+      color: var(--text-secondary);
+    }
+
+    .dropzone-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .dropzone-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Form Inputs */
+    .input-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .input-text {
+      flex: 1;
+      background-color: var(--bg-canvas);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      color: var(--text-primary);
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: var(--font-sans);
+      outline: none;
+      transition: border-color 150ms ease;
+    }
+
+    .input-text:focus {
+      border-color: var(--border-focus);
+    }
+
+    .btn {
+      background-color: var(--accent-blue);
+      color: #fff;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 10px 20px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background-color 150ms ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background-color: var(--accent-blue-hover);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background-color: var(--bg-surface-elevated);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--bg-surface-hover);
+      color: var(--text-primary);
+    }
+
+    .options-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .options-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .select-input {
+      background-color: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    /* Live Progress Panel */
+    .scan-status-panel {
+      display: none;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .status-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #93c5fd;
+      background: #172554;
+      border: 1px solid #1d4ed8;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-right: 8px;
+      letter-spacing: 0.05em;
+    }
+
+    .event-log {
+      background-color: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+      max-height: 180px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+
+    .event-entry {
+      margin-bottom: 4px;
+    }
+
+    .event-stage {
+      color: #60a5fa;
+      font-weight: 600;
+    }
+
+    .event-canary {
+      color: #f87171;
+      font-weight: 600;
+    }
+
+    .event-fixed {
+      color: #34d399;
+      font-weight: 600;
+    }
+
+    /* Findings Metrics */
+    .metrics-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 16px 20px;
+    }
+
+    .metric-value {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 2px;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* Findings Table */
+    .table-container {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .findings-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .findings-table th {
+      background-color: var(--bg-surface-elevated);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .findings-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 13px;
+    }
+
+    .finding-row {
+      cursor: pointer;
+      transition: background-color 150ms ease;
+    }
+
+    .finding-row:hover {
+      background-color: var(--bg-surface-hover);
+    }
+
+    /* Status Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border: 1px solid transparent;
+    }
+
+    .badge-fixed {
+      background-color: var(--badge-fixed-bg);
+      color: var(--badge-fixed-text);
+      border-color: var(--badge-fixed-border);
+    }
+
+    .badge-dynamic {
+      background-color: var(--badge-dynamic-bg);
+      color: var(--badge-dynamic-text);
+      border-color: var(--badge-dynamic-border);
+    }
+
+    .badge-static {
+      background-color: var(--badge-static-bg);
+      color: var(--badge-static-text);
+      border-color: var(--badge-static-border);
+    }
+
+    .badge-unverified {
+      background-color: var(--badge-unverified-bg);
+      color: var(--badge-unverified-text);
+      border-color: var(--badge-unverified-border);
+    }
+
+    .badge-rejected {
+      background-color: var(--badge-rejected-bg);
+      color: var(--badge-rejected-text);
+      border-color: var(--badge-rejected-border);
+    }
+
+    .severity-tag {
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    .sev-CRITICAL { color: #f87171; }
+    .sev-HIGH { color: #fb923c; }
+    .sev-MEDIUM { color: #facc15; }
+    .sev-LOW { color: #60a5fa; }
+
+    /* Expandable Detail View */
+    .detail-drawer {
+      display: none;
+      background-color: #0c121e;
+      border-bottom: 1px solid var(--border-strong);
+      padding: 20px 24px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .detail-block {
+      background-color: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 14px;
+    }
+
+    .detail-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    pre.code-view {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #e2e8f0;
+      background-color: #080c14;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .diff-add { color: #4ade80; background: rgba(74, 222, 128, 0.1); }
+    .diff-del { color: #f87171; background: rgba(248, 113, 113, 0.1); }
+
+    .export-actions {
+      display: flex;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">SX</div>
+      <div class="brand-title">ScanneX</div>
+      <span class="brand-tag">Autonomous AppSec</span>
+    </div>
+    <div class="nav-meta">
+      <span>Team Gravitas (T2-13)</span>
+      <span>•</span>
+      <span>Deterministic Canary Oracle</span>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Ingestion Card -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Run Security Verification</h2>
+        <p class="card-description">Drop a source repository ZIP, enter a GitHub URL, or launch the retrospective benchmark CVE demo.</p>
+      </div>
+
+      <!-- Ingestion Mode Tabs -->
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('zip')">ZIP Archive</button>
+        <button class="tab-btn" onclick="switchTab('github')">GitHub Repository</button>
+      </div>
+
+      <!-- Tab 1: ZIP Dropzone -->
+      <div id="tab-zip">
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+          <div class="dropzone-icon">📦</div>
+          <div class="dropzone-text" id="dropzone-label">Drop source code .ZIP archive here, or click to browse</div>
+          <div class="dropzone-sub">Accepts standalone Python/Flask repositories</div>
+          <input type="file" id="file-input" accept=".zip" style="display: none;" onchange="handleFileSelect(event)" />
+        </div>
+      </div>
+
+      <!-- Tab 2: GitHub URL -->
+      <div id="tab-github" style="display: none;">
+        <div class="input-row">
+          <input type="url" id="github-url" class="input-text" placeholder="https://github.com/owner/repository" />
+          <button class="btn" onclick="startGithubScan()">Clone & Scan</button>
+        </div>
+      </div>
+
+      <!-- Options & One-Click Demo -->
+      <div class="options-bar">
+        <div class="options-group">
+          <span>Analysis Engine:</span>
+          <select id="engine-select" class="select-input">
+            <option value="mock">Fast Evaluation (Deterministic Mock)</option>
+            <option value="ollama">Local Ollama (llama3.2:1b)</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary" onclick="startDemoScan()">⚡ Run Benchmark CVE Demo</button>
+      </div>
+    </div>
+
+    <!-- Live Scan Status & Activity Feed -->
+    <div class="scan-status-panel" id="status-panel">
+      <div class="status-header">
+        <div>
+          <span class="live-indicator">ACTIVE</span>
+          <span id="target-title" style="font-weight: 600;">Scanning target repository...</span>
+        </div>
+        <span class="brand-tag" id="current-stage-tag">INITIALIZING</span>
+      </div>
+      <div class="event-log" id="event-log"></div>
+    </div>
+
+    <!-- Metrics Counters -->
+    <div class="metrics-bar" id="metrics-bar" style="display: none;">
+      <div class="metric-card">
+        <div class="metric-value" id="count-total">0</div>
+        <div class="metric-label">Total Findings</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" id="count-fixed" style="color: #34d399;">0</div>
+        <div class="metric-label">Verified Fixed (Sandbox Neutralized)</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" id="count-dynamic" style="color: #f87171;">0</div>
+        <div class="metric-label">Confirmed Dynamic (Exploit Proven)</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" id="count-unverified" style="color: #94a3b8;">0</div>
+        <div class="metric-label">Unverified Probes</div>
+      </div>
+    </div>
+
+    <!-- Findings Table & Results -->
+    <div class="table-container" id="results-panel" style="display: none;">
+      <div class="table-header">
+        <span style="font-weight: 600;">Evidence-Backed Findings</span>
+        <div class="export-actions">
+          <button class="btn btn-secondary" onclick="downloadSarif()">📥 Download SARIF 2.1.0</button>
+          <button class="btn btn-secondary" onclick="downloadMarkdown()">📄 Download Markdown</button>
+        </div>
+      </div>
+
+      <table class="findings-table">
+        <thead>
+          <tr>
+            <th>Severity</th>
+            <th>Status</th>
+            <th>Vulnerability</th>
+            <th>Location</th>
+            <th>Oracle Evidence</th>
+          </tr>
+        </thead>
+        <tbody id="findings-tbody"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    let activeSessionId = null;
+    let pollInterval = null;
+
+    function switchTab(mode) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      if (mode === 'zip') {
+        document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+        document.getElementById('tab-zip').style.display = 'block';
+        document.getElementById('tab-github').style.display = 'none';
+      } else {
+        document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+        document.getElementById('tab-zip').style.display = 'none';
+        document.getElementById('tab-github').style.display = 'block';
+      }
+    }
+
+    // Drag and drop handlers
+    const dropzone = document.getElementById('dropzone');
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        uploadFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    function handleFileSelect(e) {
+      if (e.target.files.length > 0) {
+        uploadFile(e.target.files[0]);
+      }
+    }
+
+    function uploadFile(file) {
+      if (!file.name.endsWith('.zip')) {
+        alert('Please upload a .ZIP archive.');
+        return;
+      }
+      document.getElementById('dropzone-label').innerText = `Uploading & scanning: ${file.name}...`;
+      const formData = new FormData();
+      formData.append('file', file);
+      const isMock = document.getElementById('engine-select').value === 'mock';
+      formData.append('mock', isMock ? 'true' : 'false');
+      formData.append('model', 'ollama/llama3.2:1b');
+
+      fetch('/api/scan/upload', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+          if (data.session_id) {
+            initScanTracking(data.session_id, file.name);
+          } else {
+            alert('Upload failed: ' + (data.error || 'Unknown error'));
+          }
+        });
+    }
+
+    function startGithubScan() {
+      const url = document.getElementById('github-url').value.trim();
+      if (!url) {
+        alert('Please enter a GitHub repository URL.');
+        return;
+      }
+      const isMock = document.getElementById('engine-select').value === 'mock';
+
+      fetch('/api/scan/github', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url, mock: isMock, model: 'ollama/llama3.2:1b' })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.session_id) {
+          initScanTracking(data.session_id, url);
+        } else {
+          alert('Clone failed: ' + (data.error || 'Unknown error'));
+        }
+      });
+    }
+
+    function startDemoScan() {
+      const isMock = document.getElementById('engine-select').value === 'mock';
+      fetch('/api/scan/demo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mock: isMock, model: 'ollama/llama3.2:1b' })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.session_id) {
+          initScanTracking(data.session_id, 'vulnerable_flask_app (Pre-Patch Benchmark)');
+        }
+      });
+    }
+
+    function initScanTracking(sessionId, targetName) {
+      activeSessionId = sessionId;
+      document.getElementById('status-panel').style.display = 'block';
+      document.getElementById('metrics-bar').style.display = 'none';
+      document.getElementById('results-panel').style.display = 'none';
+      document.getElementById('target-title').innerText = `Scanning: ${targetName}`;
+      document.getElementById('event-log').innerHTML = '';
+
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(pollStatus, 1000);
+      pollStatus();
+    }
+
+    function pollStatus() {
+      if (!activeSessionId) return;
+      fetch(`/api/scan/${activeSessionId}/status`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('current-stage-tag').innerText = data.current_stage || 'RUNNING';
+
+          // Update event feed
+          const log = document.getElementById('event-log');
+          log.innerHTML = data.events.map(ev => {
+            let cls = 'event-entry';
+            if (ev.stage.includes('CONFIRMED')) cls += ' event-canary';
+            if (ev.stage.includes('FIX_VERIFIED')) cls += ' event-fixed';
+            return `<div class="${cls}"><span class="event-stage">[${ev.stage}]</span> ${escapeHtml(ev.message)}</div>`;
+          }).join('');
+          log.scrollTop = log.scrollHeight;
+
+          if (data.status === 'completed') {
+            clearInterval(pollInterval);
+            renderResults(data.findings);
+          } else if (data.status === 'failed') {
+            clearInterval(pollInterval);
+            alert('Scan encountered an error: ' + (data.error || 'Unknown failure'));
+          }
+        });
+    }
+
+    function renderResults(findings) {
+      document.getElementById('metrics-bar').style.display = 'grid';
+      document.getElementById('results-panel').style.display = 'block';
+
+      // Update counters
+      document.getElementById('count-total').innerText = findings.length;
+      document.getElementById('count-fixed').innerText = findings.filter(f => f.status === 'verified_fixed').length;
+      document.getElementById('count-dynamic').innerText = findings.filter(f => f.status === 'confirmed_dynamic').length;
+      document.getElementById('count-unverified').innerText = findings.filter(f => f.status === 'unverified').length;
+
+      const tbody = document.getElementById('findings-tbody');
+      tbody.innerHTML = '';
+
+      findings.forEach((f, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = 'finding-row';
+        tr.onclick = () => toggleDetail(idx);
+
+        let badgeClass = 'badge-unverified';
+        if (f.status === 'verified_fixed') badgeClass = 'badge-fixed';
+        else if (f.status === 'confirmed_dynamic') badgeClass = 'badge-dynamic';
+        else if (f.status === 'confirmed_static') badgeClass = 'badge-static';
+        else if (f.status === 'rejected') badgeClass = 'badge-rejected';
+
+        let evidenceText = 'No dynamic repro';
+        if (f.probe_result && f.probe_result.canary_tripped) {
+          evidenceText = f.probe_result.response_snippet ? escapeHtml(f.probe_result.response_snippet) : 'Canary token tripped';
+        }
+
+        tr.innerHTML = `
+          <td><span class="severity-tag sev-${f.severity}">${f.severity}</span></td>
+          <td><span class="badge ${badgeClass}">${f.status}</span></td>
+          <td><strong>${escapeHtml(f.vuln_type)}</strong><br/><span style="color: var(--text-muted); font-size: 11px;">${escapeHtml(f.cwe)}</span></td>
+          <td><code>${escapeHtml(f.file_path)}:${f.line_number}</code></td>
+          <td style="color: var(--text-secondary); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${evidenceText}</td>
+        `;
+
+        // Drawer row
+        const drawerTr = document.createElement('tr');
+        drawerTr.id = `detail-${idx}`;
+        drawerTr.className = 'detail-drawer';
+        drawerTr.innerHTML = `
+          <td colspan="5">
+            <div class="detail-grid">
+              <div class="detail-block">
+                <div class="detail-title">Description & Sink</div>
+                <p style="margin-bottom: 8px; color: var(--text-secondary); font-size: 12px;">${escapeHtml(f.description)}</p>
+                ${f.sink_code ? `<pre class="code-view">${escapeHtml(f.sink_code)}</pre>` : ''}
+              </div>
+              <div class="detail-block">
+                <div class="detail-title">Deterministic Canary Oracle</div>
+                ${f.probe_spec ? `
+                  <p style="font-size: 12px; margin-bottom: 4px;"><strong>Endpoint:</strong> <code>${f.probe_spec.method} ${escapeHtml(f.probe_spec.endpoint)}</code></p>
+                  <p style="font-size: 12px; margin-bottom: 4px;"><strong>Canary Token:</strong> <code>${escapeHtml(f.probe_spec.canary_token)}</code></p>
+                  <p style="font-size: 12px;"><strong>Tripped:</strong> ${f.probe_result && f.probe_result.canary_tripped ? '<span style="color: #f87171; font-weight: bold;">YES (EXPLOIT PROVEN)</span>' : '<span style="color: #94a3b8;">NO</span>'}</p>
+                ` : '<p style="color: var(--text-muted); font-size: 12px;">Static taint sink; no HTTP route mapped.</p>'}
+              </div>
+            </div>
+            ${f.patch_spec && f.patch_spec.unified_diff ? `
+              <div class="detail-block" style="margin-top: 14px;">
+                <div class="detail-title">Speculative Patch (Applied in Sandbox: ${f.patch_spec.retest_verified ? 'VERIFIED FIXED' : 'RETEST PENDING'})</div>
+                <p style="color: var(--text-secondary); font-size: 12px; margin-bottom: 6px;">${escapeHtml(f.patch_spec.explanation)}</p>
+                <pre class="code-view">${formatDiff(f.patch_spec.unified_diff)}</pre>
+              </div>
+            ` : ''}
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+        tbody.appendChild(drawerTr);
+      });
+    }
+
+    function toggleDetail(idx) {
+      const drawer = document.getElementById(`detail-${idx}`);
+      if (drawer.style.display === 'table-row') {
+        drawer.style.display = 'none';
+      } else {
+        drawer.style.display = 'table-row';
+      }
+    }
+
+    function formatDiff(diff) {
+      return diff.split('\n').map(line => {
+        if (line.startsWith('+')) return `<span class="diff-add">${escapeHtml(line)}</span>`;
+        if (line.startsWith('-')) return `<span class="diff-del">${escapeHtml(line)}</span>`;
+        return escapeHtml(line);
+      }).join('\n');
+    }
+
+    function downloadSarif() {
+      if (activeSessionId) window.location.href = `/api/scan/${activeSessionId}/sarif`;
+    }
+
+    function downloadMarkdown() {
+      if (activeSessionId) window.location.href = `/api/scan/${activeSessionId}/markdown`;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
