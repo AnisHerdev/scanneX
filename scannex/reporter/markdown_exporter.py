@@ -43,7 +43,11 @@ class MarkdownExporter:
                 md.append(f"- **Source:** `{f.source}`")
                 md.append(f"- **Description:** {f.description}")
 
-                if f.sink_code:
+                is_placeholder_sink = (
+                    not f.sink_code
+                    or f.sink_code.strip().lower() in ("code snippet", "code_snippet", "sink_code", "placeholder", "...")
+                )
+                if f.sink_code and not is_placeholder_sink:
                     md.append(f"\n**Code Sink:**\n```python\n{f.sink_code}\n```")
 
                 if f.probe_spec:

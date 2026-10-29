@@ -34,7 +34,7 @@ sessions: dict[str, dict[str, Any]] = {}
 
 def parse_scanner_options(data_or_form: Any) -> tuple[list[str], bool, bool]:
     """Extract checklist configurations for Semgrep and Bandit from request form or JSON."""
-    semgrep_configs = ["p/owasp-top-ten", "p/security-audit", "p/php"]
+    semgrep_configs = ["p/owasp-top-ten", "p/security-audit", "p/php", "p/javascript"]
     enable_bandit = True
     scan_workflows = False
 
@@ -88,7 +88,7 @@ def parse_scanner_options(data_or_form: Any) -> tuple[list[str], bool, bool]:
 
 def get_source_summary(target_dir: Path) -> tuple[int, str]:
     """Count source files across supported languages and provide a human summary."""
-    src_exts = {".py", ".php", ".js", ".jsx", ".ts", ".tsx", ".go", ".java", ".rb", ".c", ".cpp"}
+    src_exts = {".py", ".php", ".phtml", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".go", ".java", ".rb", ".c", ".cpp"}
     files = [p for p in target_dir.rglob("*") if p.is_file() and p.suffix.lower() in src_exts]
     total = len(files)
     if total == 0:

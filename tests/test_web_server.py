@@ -118,6 +118,9 @@ def test_index_contains_checklist_options(client):
     assert "rule-owasp" in html
     assert "rule-php" in html
     assert "rule-security-audit" in html
+    assert "rule-javascript" in html
+    assert "count-semgrep" in html
+    assert "count-bandit" in html
     assert "rule-bandit" in html
     assert "rule-workflows" in html
 

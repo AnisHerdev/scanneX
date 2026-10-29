@@ -33,7 +33,7 @@ class ScannexConfig(BaseModel):
 
     # Multi-language Semgrep rule configurations & linters
     semgrep_configs: list[str] = Field(
-        default_factory=lambda: ["p/owasp-top-ten", "p/security-audit", "p/php"]
+        default_factory=lambda: ["p/owasp-top-ten", "p/security-audit", "p/php", "p/javascript"]
     )
     enable_bandit: bool = Field(default=True)
     enable_malware_scan: bool = Field(default=True)

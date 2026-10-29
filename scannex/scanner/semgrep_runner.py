@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class SemgrepRunner:
     """Executes Semgrep taint and SAST rules on target repositories."""
 
-    DEFAULT_CONFIGS = ["p/owasp-top-ten", "p/security-audit", "p/php"]
+    DEFAULT_CONFIGS = ["p/owasp-top-ten", "p/security-audit", "p/php", "p/javascript"]
 
     def __init__(
         self,
@@ -80,6 +80,8 @@ class SemgrepRunner:
 
         # If no configs selected, skip Semgrep execution
         active_configs = [c for c in self.configs if c]
+        if self.scan_workflows and "p/github-actions" not in active_configs:
+            active_configs = list(active_configs) + ["p/github-actions"]
         if not active_configs:
             return []
 
@@ -315,9 +317,10 @@ class SemgrepRunner:
             probe_spec = ProbeSpec(
                 endpoint=route.endpoint,
                 method=route.methods[0] if route.methods else "GET",
-                params={route.param_names[0]: canary_token} if route.param_names else {"canary": canary_token},
+                params=({route.param_names[0]: (f"; touch /tmp/canary_{canary_token}.txt &" if canary_type == CanaryType.FILE_MARKER else canary_token)} if route.param_names else {"canary": (f"; touch /tmp/canary_{canary_token}.txt &" if canary_type == CanaryType.FILE_MARKER else canary_token)}),
                 canary_type=canary_type,
                 canary_token=canary_token,
+                file_marker_path=(f"/tmp/canary_{canary_token}.txt" if canary_type == CanaryType.FILE_MARKER else None),
             )
             finding.probe_spec = probe_spec
             finding.add_trace(f"Mapped to HTTP endpoint {probe_spec.method} {probe_spec.endpoint}")

@@ -1307,7 +1307,7 @@
     /* Metrics Summary Cards */
     .metrics-bar {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -1627,6 +1627,15 @@
       gap: 8px;
     }
 
+        .event-semgrep .event-stage { color: #0284c7 !important; }
+    .event-bandit .event-stage { color: #ea580c !important; }
+
+    @media (max-width: 1080px) {
+      .metrics-bar {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
     @media (max-width: 840px) {
       .metrics-bar {
         grid-template-columns: repeat(2, 1fr);
@@ -1924,6 +1933,15 @@
             </div>
           </label>
 
+          <!-- JavaScript & TypeScript Security Suite -->
+          <label class="rule-card" id="card-javascript">
+            <input type="checkbox" id="rule-javascript" class="rule-cb" checked onchange="handleRulesChange()" />
+            <div class="rule-info">
+              <div class="rule-name">JavaScript &amp; TypeScript Suite</div>
+              <div class="rule-desc">Node.js, Express &amp; React sinks: prototype pollution, DOM XSS, child_process</div>
+            </div>
+          </label>
+
           <!-- Bandit Python AST -->
           <label class="rule-card" id="card-bandit">
             <input type="checkbox" id="rule-bandit" class="rule-cb" checked onchange="handleRulesChange()" />
@@ -1986,7 +2004,15 @@
     <div class="metrics-bar" id="metrics-bar" style="display: none;">
       <div class="metric-card">
         <div class="metric-value" id="count-total">0</div>
-        <div class="metric-label">Total SAST Alerts</div>
+        <div class="metric-label">Total Findings</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" id="count-semgrep" style="color: #0284c7;">0</div>
+        <div class="metric-label">Semgrep SAST Errors</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" id="count-bandit" style="color: #ea580c;">0</div>
+        <div class="metric-label">Bandit AST Errors</div>
       </div>
       <div class="metric-card">
         <div class="metric-value" id="count-fixed" style="color: var(--badge-fixed-text);">0</div>
@@ -2321,6 +2347,7 @@
         { id: 'rule-owasp', card: 'card-owasp' },
         { id: 'rule-php', card: 'card-php' },
         { id: 'rule-security-audit', card: 'card-security-audit' },
+        { id: 'rule-javascript', card: 'card-javascript' },
         { id: 'rule-bandit', card: 'card-bandit' },
         { id: 'rule-workflows', card: 'card-workflows' },
       ];
@@ -2350,6 +2377,7 @@
       const owasp = document.getElementById('rule-owasp');
       const php = document.getElementById('rule-php');
       const sec = document.getElementById('rule-security-audit');
+      const js = document.getElementById('rule-javascript');
       const bandit = document.getElementById('rule-bandit');
       const workflows = document.getElementById('rule-workflows');
 
@@ -2357,18 +2385,21 @@
         if (owasp) owasp.checked = true;
         if (php) php.checked = true;
         if (sec) sec.checked = true;
+        if (js) js.checked = true;
         if (bandit) bandit.checked = true;
         if (workflows) workflows.checked = true;
       } else if (mode === 'none') {
         if (owasp) owasp.checked = false;
         if (php) php.checked = false;
         if (sec) sec.checked = false;
+        if (js) js.checked = false;
         if (bandit) bandit.checked = false;
         if (workflows) workflows.checked = false;
       } else if (mode === 'default') {
         if (owasp) owasp.checked = true;
         if (php) php.checked = true;
         if (sec) sec.checked = true;
+        if (js) js.checked = true;
         if (bandit) bandit.checked = true;
         if (workflows) workflows.checked = false;
       }
@@ -2381,6 +2412,7 @@
         owasp: document.getElementById('rule-owasp')?.checked ?? true,
         php: document.getElementById('rule-php')?.checked ?? true,
         sec: document.getElementById('rule-security-audit')?.checked ?? true,
+        javascript: document.getElementById('rule-javascript')?.checked ?? true,
         bandit: document.getElementById('rule-bandit')?.checked ?? true,
         workflows: document.getElementById('rule-workflows')?.checked ?? false,
       };
@@ -2402,6 +2434,9 @@
           }
           if (document.getElementById('rule-security-audit') && typeof prefs.sec === 'boolean') {
             document.getElementById('rule-security-audit').checked = prefs.sec;
+          }
+          if (document.getElementById('rule-javascript') && typeof prefs.javascript === 'boolean') {
+            document.getElementById('rule-javascript').checked = prefs.javascript;
           }
           if (document.getElementById('rule-bandit') && typeof prefs.bandit === 'boolean') {
             document.getElementById('rule-bandit').checked = prefs.bandit;
@@ -2427,6 +2462,9 @@
       }
       if (document.getElementById('rule-security-audit')?.checked) {
         semgrepConfigs.push('p/security-audit');
+      }
+      if (document.getElementById('rule-javascript')?.checked) {
+        semgrepConfigs.push('p/javascript');
       }
 
       const enableBandit = document.getElementById('rule-bandit')?.checked ?? true;
@@ -2688,6 +2726,8 @@
               if (ev.stage.includes('FIX_VERIFIED')) cls += ' event-fixed';
               if (ev.stage.includes('FAILED') || ev.stage.includes('ERROR')) cls += ' event-error';
               if (ev.stage.includes('EXTRACT')) cls += ' event-extract';
+              if (ev.stage.includes('SEMGREP')) cls += ' event-semgrep';
+              if (ev.stage.includes('BANDIT')) cls += ' event-bandit';
               return `<div class="${cls}"><span class="event-stage">[${escapeHtml(ev.stage)}]</span> ${escapeHtml(ev.message)}</div>`;
             }).join('');
             log.scrollTop = log.scrollHeight;
@@ -2712,6 +2752,12 @@
 
       // Update counters with tabular numerals
       document.getElementById('count-total').innerText = findings.length;
+      if (document.getElementById('count-semgrep')) {
+        document.getElementById('count-semgrep').innerText = findings.filter(f => f.source === 'static_semgrep').length;
+      }
+      if (document.getElementById('count-bandit')) {
+        document.getElementById('count-bandit').innerText = findings.filter(f => f.source === 'static_bandit').length;
+      }
       document.getElementById('count-fixed').innerText = findings.filter(f => f.status === 'verified_fixed').length;
       document.getElementById('count-dynamic').innerText = findings.filter(f => f.status === 'confirmed_dynamic').length;
       document.getElementById('count-unverified').innerText = findings.filter(f => f.status === 'unverified').length;
@@ -2774,6 +2820,17 @@
           evidenceText = f.probe_result.response_snippet ? escapeHtml(f.probe_result.response_snippet) : 'Canary token tripped';
         }
 
+        let sourceBadge = '';
+        if (f.source === 'static_semgrep') {
+          sourceBadge = '<span class="source-tag source-semgrep" style="display:inline-block; font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:rgba(2,132,199,0.15); color:#0284c7; border:1px solid rgba(2,132,199,0.3); margin-left:6px; letter-spacing:0.02em;">SEMGREP</span>';
+        } else if (f.source === 'static_bandit') {
+          sourceBadge = '<span class="source-tag source-bandit" style="display:inline-block; font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:rgba(234,88,12,0.15); color:#ea580c; border:1px solid rgba(234,88,12,0.3); margin-left:6px; letter-spacing:0.02em;">BANDIT</span>';
+        } else if (f.source === 'ai_hunter') {
+          sourceBadge = '<span class="source-tag source-hunter" style="display:inline-block; font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:rgba(168,85,247,0.15); color:#a855f7; border:1px solid rgba(168,85,247,0.3); margin-left:6px; letter-spacing:0.02em;">AI HUNTER</span>';
+        } else if (f.source === 'malware_detector') {
+          sourceBadge = '<span class="source-tag source-malware" style="display:inline-block; font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:rgba(225,29,72,0.15); color:#e11d48; border:1px solid rgba(225,29,72,0.3); margin-left:6px; letter-spacing:0.02em;">MALWARE</span>';
+        }
+
         tr.innerHTML = `
           <td>
             <svg class="chevron-icon" id="chevron-${idx}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -2782,7 +2839,7 @@
             <span class="severity-tag sev-${f.severity}">${f.severity}</span>
           </td>
           <td><span class="badge ${badgeClass}" title="${escapeHtml(badgeTitle)}">${escapeHtml(f.status)}</span></td>
-          <td><strong class="finding-vuln-title">${escapeHtml(f.vuln_type)}</strong><br/><span class="finding-cwe">${escapeHtml(f.cwe)}</span></td>
+          <td><strong class="finding-vuln-title">${escapeHtml(f.vuln_type)}</strong>${sourceBadge}<br/><span class="finding-cwe">${escapeHtml(f.cwe)}</span></td>
           <td><code class="finding-location">${escapeHtml(f.file_path)}:${f.line_number}</code></td>
           <td style="color: var(--text-secondary); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${evidenceText}</td>
         `;

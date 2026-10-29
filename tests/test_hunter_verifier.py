@@ -103,3 +103,37 @@ def get_user(username):
     assert success is True
     assert "%s" in patched_code
     assert "{username}'" not in patched_code
+
+
+def test_hunter_resolves_placeholder_code_snippet(tmp_path):
+    target_file = tmp_path / "test_url.py"
+    target_file.write_text("""# test file
+import requests
+
+def test_fetch():
+    url = "http://internal-service.local/secret"
+    res = requests.get(url)
+    return res.text
+""", encoding="utf-8")
+
+    hunter = HunterAgent(tmp_path)
+    raw_item = {
+        "file_path": "test_url.py",
+        "line_number": 6,
+        "vuln_type": "SSRF",
+        "cwe": "CWE-918",
+        "severity": "CRITICAL",
+        "title": "SSRF Vulnerability",
+        "description": "Vulnerable URL can be accessed.",
+        "sink_code": "code snippet",
+        "endpoint": "/vulnerable-route",
+        "method": "GET | POST",
+    }
+    
+    finding = hunter._create_finding(raw_item, target_file)
+    assert finding is not None
+    # Verify that "code snippet" placeholder is replaced by authentic line
+    assert finding.sink_code == "res = requests.get(url)"
+    assert "code snippet" not in finding.sink_code.lower()
+    # Verify placeholder route was stripped and non-route file does not have bogus probe_spec
+    assert finding.probe_spec is None

@@ -74,6 +74,8 @@ def scan(target, mock, dockeronly, model, sarif, markdown, html, db, concurrency
             "INIT": "cyan",
             "MALWARE_SCAN": "bold red",
             "STATIC_SCAN": "yellow",
+            "BANDIT_SCAN": "yellow",
+            "SEMGREP_SCAN": "bright_blue",
             "AI_HUNT": "magenta",
             "ADVERSARIAL_VERIFY": "blue",
             "CONSOLIDATE": "bright_blue",
@@ -142,6 +144,8 @@ def demo(mock, dockeronly, sarif, markdown, html):
         color = {
             "INIT": "cyan",
             "STATIC_SCAN": "yellow",
+            "BANDIT_SCAN": "yellow",
+            "SEMGREP_SCAN": "bright_blue",
             "AI_HUNT": "magenta",
             "ADVERSARIAL_VERIFY": "blue",
             "CONSOLIDATE": "bright_blue",

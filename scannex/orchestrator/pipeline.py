@@ -95,10 +95,15 @@ class ScannexOrchestrator:
                 ".pytest_cache",
                 "site-packages",
             }
-            source_extensions = {".py", ".php", ".inc", ".js", ".ts", ".html", ".go", ".java", ".rb", ".cs"}
+            source_extensions = {
+                ".py", ".php", ".phtml", ".inc",
+                ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
+                ".html", ".htm", ".go", ".java", ".rb", ".cs",
+                ".yaml", ".yml", "dockerfile",
+            }
             src_files = [
                 p for p in self.target_dir.rglob("*")
-                if p.is_file() and p.suffix.lower() in source_extensions
+                if p.is_file() and (p.suffix.lower() in source_extensions or p.name.lower() in source_extensions)
                 and not any(part in ignored_dirs or (part.startswith(".") and part != ".") for part in p.parts)
             ]
             self._emit(
@@ -132,7 +137,22 @@ class ScannexOrchestrator:
             bandit_findings = results[0] or []
             semgrep_findings = results[1] or []
             static_findings = bandit_findings + semgrep_findings
-            self._emit("STATIC_SCAN", f"Static scan complete: {len(static_findings)} rule findings identified.")
+            if getattr(self.config, "enable_bandit", True):
+                self._emit(
+                    "BANDIT_SCAN",
+                    f"Bandit Python AST analysis complete: {len(bandit_findings)} flaw(s) identified.",
+                    metadata={"count": len(bandit_findings)},
+                )
+            self._emit(
+                "SEMGREP_SCAN",
+                f"Semgrep multi-language taint analysis complete: {len(semgrep_findings)} rule flaw(s) identified.",
+                metadata={"count": len(semgrep_findings)},
+            )
+            self._emit(
+                "STATIC_SCAN",
+                f"Static scan complete: {len(static_findings)} total findings ({len(semgrep_findings)} Semgrep, {len(bandit_findings)} Bandit).",
+                metadata={"semgrep_count": len(semgrep_findings), "bandit_count": len(bandit_findings)},
+            )
 
             # -------------------------------------------------------------
             # Track 2: AI Hunter + Immediate Adversarial Verifier
