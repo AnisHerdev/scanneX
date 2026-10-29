@@ -24,6 +24,20 @@
   --bg-code: #f1f5f9;                 /* Code block background */
   --bg-terminal: #090d12;             /* Terminal dark console */
 
+  /* Terminal Log Tokens (WCAG AAA Ultra High Contrast on dark console) */
+  --terminal-bg: #090d12;
+  --terminal-text: #f1f5f9;           /* Slate-100 crisp text (17.9:1 contrast) */
+  --terminal-text-dim: #94a3b8;       /* Slate-400 clean muted text (7.7:1 contrast) */
+  --terminal-stage: #34d399;          /* Emerald-400 high-contrast stage pills (10.8:1 contrast) */
+  --terminal-fixed: #34d399;          /* Emerald-400 verified fixed (10.8:1 contrast) */
+  --terminal-canary: #fb7185;         /* Rose-400 critical exploit canary (8.0:1 contrast) */
+  --terminal-error: #f87171;          /* Red-400 error text (8.1:1 contrast) */
+  --terminal-extract: #38bdf8;        /* Sky-400 extraction text (9.7:1 contrast) */
+  --terminal-semgrep: #38bdf8;        /* Sky-400 semgrep text (9.7:1 contrast) */
+  --terminal-bandit: #fbbf24;         /* Amber-400 bandit text (11.8:1 contrast) */
+  --terminal-malware: #c084fc;        /* Purple-400 malware text (8.4:1 contrast) */
+  --terminal-border: #334155;         /* Crisp boundary framing the terminal */
+
   /* Borders */
   --border-subtle: #cbd5e1;           /* Crisp, clearly visible card perimeter border */
   --border-strong: #94a3b8;           /* High-contrast thick separator & dashed lines */
@@ -99,6 +113,20 @@
   --bg-inset: #0c0d12;                /* Deep recessed dark inset */
   --bg-code: #0b0c10;                 /* Monospace code block */
   --bg-terminal: #07080a;             /* Console terminal background */
+
+  /* Terminal Log Tokens (WCAG AAA Ultra High Contrast on dark console) */
+  --terminal-bg: #07080a;
+  --terminal-text: #f4f4f5;           /* Zinc-100 crisp text (18.5:1 contrast) */
+  --terminal-text-dim: #a1a1aa;       /* Zinc-400 clean muted text (8.8:1 contrast) */
+  --terminal-stage: #34d399;          /* Emerald-400 high-contrast stage pills (11.5:1 contrast) */
+  --terminal-fixed: #34d399;          /* Emerald-400 verified fixed (11.5:1 contrast) */
+  --terminal-canary: #fb7185;         /* Rose-400 critical exploit canary (8.5:1 contrast) */
+  --terminal-error: #f87171;          /* Red-400 error text (8.5:1 contrast) */
+  --terminal-extract: #38bdf8;        /* Sky-400 extraction text (10.2:1 contrast) */
+  --terminal-semgrep: #38bdf8;        /* Sky-400 semgrep text (10.2:1 contrast) */
+  --terminal-bandit: #fbbf24;         /* Amber-400 bandit text (12.2:1 contrast) */
+  --terminal-malware: #c084fc;        /* Purple-400 malware text (8.8:1 contrast) */
+  --terminal-border: rgba(255, 255, 255, 0.16); /* Crisp hairline edge */
 
   /* Borders */
   --border-subtle: rgba(255, 255, 255, 0.14); /* Crisp, visible card edges */
@@ -192,6 +220,6 @@
 - **Dropzone & Staged File State**: Hairline dashed dropzone transitioning upon archive selection into a flat staged file row (`staged-file-row`) displaying file metadata, human-readable size, a "Ready for verification" badge, "Change File" control, and an explicit primary emerald "Start Pipeline Scan" trigger (`#btn-zip-scan`).
 - **Verification Engine Toggle**: 3-way segmented button with crisp active highlight.
 - **Rule Packs Checklist**: Interactive rule cards with subtle active border highlight.
-- **Live Terminal & Activity Log**: Authentic developer console with deep background, monospaced logs, stage pills (`[STATIC]`, `[SANDBOX]`, `[PROBE]`, `[PATCH]`), and copy button.
+- **Live Terminal & Activity Log**: Authentic developer console with deep background, monospaced logs, stage pills (`[STATIC]`, `[SANDBOX]`, `[PROBE]`, `[PATCH]`), dedicated high-contrast terminal tokens (WCAG AAA ≥ 7:1) ensuring crystal readability in both light and dark modes, and copy button.
 - **Live Sandbox Monitor**: Clean `DOCKER` and `SUBPROCESS` text badges with pulsing status indicator.
 - **Findings Table & Detail Drawer**: High contrast table rows, clean chevron expanders, code sink viewer, canary oracle evidence, and unified diff syntax highlighting.

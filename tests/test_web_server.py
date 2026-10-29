@@ -200,3 +200,29 @@ def test_upload_and_scan_eicar_zip_detects_malware(client):
             assert finding["status"] == "confirmed_static"
             break
     assert completed, "Scan session did not complete in time"
+
+
+def test_dashboard_log_contrast_tokens_and_classes(client):
+    """Ensure the event-log console uses high-contrast terminal tokens and dedicated classes."""
+    res = client.get("/")
+    assert res.status_code == 200
+    html = res.data.decode("utf-8")
+
+    # High-contrast terminal design tokens in light & dark modes
+    assert "--terminal-bg" in html
+    assert "--terminal-text" in html
+    assert "--terminal-stage" in html
+    assert "--terminal-border" in html
+
+    # Terminal event log container and entry classes
+    assert ".event-log {" in html
+    assert "color: var(--terminal-text);" in html
+    assert ".event-stage {" in html
+    assert "color: var(--terminal-stage);" in html
+    assert ".event-canary" in html
+    assert ".event-fixed" in html
+    assert ".event-error" in html
+    assert ".event-extract" in html
+    assert ".event-semgrep" in html
+    assert ".event-bandit" in html
+    assert ".event-malware" in html

@@ -269,3 +269,56 @@ async def test_pipeline_separate_semgrep_and_bandit_events():
         assert static_event.metadata is not None
         assert "semgrep_count" in static_event.metadata
         assert "bandit_count" in static_event.metadata
+
+
+def test_semgrep_deselected_javascript_is_not_scanned():
+    """Verify that when p/javascript is deselected, JavaScript files are excluded and not scanned."""
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        target_dir = Path(tmp)
+        js_file = target_dir / "app.js"
+        js_file.write_text("const express = require('express'); const app = express(); const { exec } = require('child_process'); app.get('/run', (req, res) => { exec(req.query.cmd); res.send('done'); });", encoding="utf-8")
+
+        # 1. Scanned with p/security-audit only (p/javascript deselected)
+        runner_off = SemgrepRunner(target_dir, configs=["p/security-audit"])
+        findings_off = runner_off.run()
+        assert len(findings_off) == 0
+
+        # 2. Scanned with p/javascript selected
+        runner_on = SemgrepRunner(target_dir, configs=["p/security-audit", "p/javascript"])
+        findings_on = runner_on.run()
+        assert len(findings_on) >= 1
+        assert any(f.vuln_type == "COMMAND_INJECTION" for f in findings_on)
+
+
+def test_semgrep_deselected_php_is_not_scanned():
+    """Verify that when p/php is deselected, PHP findings are suppressed."""
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        target_dir = Path(tmp)
+        test_file = target_dir / "index.php"
+        test_file.write_text("<?php echo $_GET['name']; ?>\n", encoding="utf-8")
+
+        mock_item = {
+            "check_id": "php.lang.security.xss.tainted-echo",
+            "path": "index.php",
+            "start": {"line": 1, "col": 1},
+            "end": {"line": 1, "col": 30},
+            "extra": {
+                "message": "User input echoed to response",
+                "severity": "WARNING",
+                "metadata": {
+                    "cwe": ["CWE-79: Cross-Site Scripting"],
+                    "vulnerability_class": ["Cross-Site Scripting"],
+                },
+            },
+        }
+
+        # 1. p/php deselected
+        runner_off = SemgrepRunner(target_dir, configs=["p/security-audit"])
+        finding_off = runner_off._parse_semgrep_item(mock_item)
+        assert finding_off is None
+
+        # 2. p/php selected
+        runner_on = SemgrepRunner(target_dir, configs=["p/security-audit", "p/php"])
+        finding_on = runner_on._parse_semgrep_item(mock_item)
+        assert finding_on is not None
+        assert finding_on.vuln_type == "XSS"

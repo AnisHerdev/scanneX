@@ -93,6 +93,14 @@ class SemgrepRunner:
         if not self.scan_workflows:
             exclude_args.extend(["--exclude", ".github"])
 
+        if "p/javascript" not in active_configs:
+            for pat in ("*.js", "*.jsx", "*.ts", "*.tsx", "*.mjs", "*.cjs"):
+                exclude_args.extend(["--exclude", pat])
+
+        if "p/php" not in active_configs:
+            for pat in ("*.php", "*.phtml"):
+                exclude_args.extend(["--exclude", pat])
+
         if use_docker:
             # Mount target directory into container at /src
             target_str = str(self.target_dir)
@@ -191,6 +199,18 @@ class SemgrepRunner:
                 rel_path = str(Path(path_str).relative_to(self.target_dir))
             except ValueError:
                 rel_path = path_str.replace("\\", "/").lstrip("/")
+
+        # Suppress findings if the corresponding language rule pack has been deselected
+        active_configs = [c for c in self.configs if c]
+        if "p/javascript" not in active_configs:
+            js_exts = (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs")
+            if rel_path.lower().endswith(js_exts) or check_id.lower().startswith(("javascript.", "typescript.", "js.", "ts.")):
+                return None
+
+        if "p/php" not in active_configs:
+            php_exts = (".php", ".phtml")
+            if rel_path.lower().endswith(php_exts) or check_id.lower().startswith(("php.", "php-")):
+                return None
 
         # Extract authentic code sink directly from disk if available
         code_sink = ""
