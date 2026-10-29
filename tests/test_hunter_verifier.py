@@ -97,6 +97,9 @@ def get_user(username):
     assert patch.search_block != ""
     assert patch.replace_block != ""
     assert "%s" in patch.replace_block or "username" in patch.replace_block
+    assert patch.mitigation != ""
+    assert "parameterized" in patch.mitigation.lower()
+    assert finding.mitigation == patch.mitigation
 
     # Test applying patch
     patched_code, success = patcher.apply_patch_to_text(original_code, patch)

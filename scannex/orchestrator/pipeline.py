@@ -1,6 +1,7 @@
 """Core ScanneX Orchestration Pipeline with Concurrent Speculative Patching."""
 
 import asyncio
+import logging
 import shutil
 import tempfile
 import zipfile
@@ -17,6 +18,8 @@ from scannex.scanner.archive_extractor import extract_zip_archive
 from scannex.scanner.bandit_runner import BanditRunner
 from scannex.scanner.malware_runner import MalwareRunner
 from scannex.scanner.semgrep_runner import SemgrepRunner
+
+logger = logging.getLogger(__name__)
 
 
 class PipelineEvent:
@@ -197,15 +200,29 @@ class ScannexOrchestrator:
                 shutil.rmtree(self.cleanup_temp_dir, ignore_errors=True)
 
     async def _process_finding(self, finding: Finding, semaphore: asyncio.Semaphore) -> Finding:
-        """Concurrently run Sandbox Prover and Speculative Patch Agent."""
+        """Concurrently run Sandbox Prover and Speculative Patch & Mitigation Agent."""
         async with semaphore:
-            # If no probe spec was generated, keep as static finding
+            # If no probe spec was generated, keep as static finding but still synthesize mitigation & patch
             if not finding.probe_spec:
                 finding.status = FindingStatus.CONFIRMED_STATIC
                 if finding.source == "malware_detector":
                     finding.add_trace("Deterministic malware signature confirmed; quarantined from dynamic sandbox")
+                    if not finding.mitigation:
+                        finding.mitigation = finding.description
                 else:
                     finding.add_trace("No HTTP route mapped; confirmed via static source-to-sink analysis")
+                    # Synthesize speculative remediation and developer/tester mitigation
+                    try:
+                        patch_spec = await self.patch_agent.generate_patch(finding)
+                        finding.patch_spec = patch_spec
+                        finding.mitigation = patch_spec.mitigation or patch_spec.explanation or finding.description
+                    except Exception as e:
+                        logger.warning(f"Patch synthesis for static finding {finding.title} failed: {e}")
+                        finding.mitigation = finding.description
+
+                if not finding.mitigation:
+                    finding.mitigation = finding.description
+
                 self.store.save_finding(finding)
                 return finding
 
@@ -228,6 +245,7 @@ class ScannexOrchestrator:
                 probe_result, patch_spec = await asyncio.gather(sandbox_task, patch_task)
                 finding.probe_result = probe_result
                 finding.patch_spec = patch_spec
+                finding.mitigation = patch_spec.mitigation or patch_spec.explanation or finding.description
 
                 # Deterministic Oracle Evaluation
                 if probe_result.canary_tripped:
@@ -260,6 +278,8 @@ class ScannexOrchestrator:
                 finding.status = FindingStatus.UNVERIFIED
                 finding.add_trace(f"Sandbox execution error: {str(e)}")
             finally:
+                if not finding.mitigation:
+                    finding.mitigation = finding.description
                 sandbox.teardown()
                 self.store.save_finding(finding)
 

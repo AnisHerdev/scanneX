@@ -41,6 +41,7 @@ class SarifExporter:
                     },
                     "properties": {
                         "cwe": f.cwe,
+                    "mitigation": f.mitigation,
                         "tags": ["security", f.vuln_type.lower()],
                     },
                 })
@@ -69,6 +70,7 @@ class SarifExporter:
                     "status": f.status.value,
                     "source": f.source,
                     "cwe": f.cwe,
+                    "mitigation": f.mitigation,
                     "evidence_trace": f.evidence_trace,
                 },
             }

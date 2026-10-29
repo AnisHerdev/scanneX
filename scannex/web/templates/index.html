@@ -2149,11 +2149,12 @@
         <table class="findings-table">
           <thead>
             <tr>
-              <th scope="col" style="width: 120px;">Severity</th>
-              <th scope="col" style="width: 170px;">Verification Status</th>
-              <th scope="col">Vulnerability &amp; CWE</th>
-              <th scope="col" style="width: 220px;">Sink Location</th>
-              <th scope="col" style="width: 260px;">Canary Oracle Evidence</th>
+              <th scope="col" style="width: 110px;">Severity</th>
+              <th scope="col" style="width: 160px;">Verification Status</th>
+              <th scope="col" style="width: 180px;">Vulnerability &amp; CWE</th>
+              <th scope="col">Mitigation Measure</th>
+              <th scope="col" style="width: 180px;">Sink Location</th>
+              <th scope="col" style="width: 220px;">Canary Oracle Evidence</th>
             </tr>
           </thead>
           <tbody id="findings-tbody"></tbody>
@@ -2860,7 +2861,7 @@
       if (findings.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="5" class="empty-findings-state">
+            <td colspan="6" class="empty-findings-state">
               <div class="empty-findings-icon">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
@@ -2923,6 +2924,8 @@
           sourceBadge = '<span class="source-tag source-malware" style="display:inline-block; font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:rgba(225,29,72,0.15); color:#e11d48; border:1px solid rgba(225,29,72,0.3); margin-left:6px; letter-spacing:0.02em;">MALWARE</span>';
         }
 
+        const mitigationText = f.mitigation || (f.patch_spec && (f.patch_spec.mitigation || f.patch_spec.explanation)) || 'Apply strict input validation, parameterization, and defense-in-depth security controls.';
+
         tr.innerHTML = `
           <td>
             <svg class="chevron-icon" id="chevron-${idx}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -2932,8 +2935,13 @@
           </td>
           <td><span class="badge ${badgeClass}" title="${escapeHtml(badgeTitle)}">${escapeHtml(f.status)}</span></td>
           <td><strong class="finding-vuln-title">${escapeHtml(f.vuln_type)}</strong>${sourceBadge}<br/><span class="finding-cwe">${escapeHtml(f.cwe)}</span></td>
+          <td style="color: var(--text-secondary); font-size: 12px; line-height: 1.45;">
+            <div style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(mitigationText)}">
+              <span style="color: var(--accent-primary, #0284c7); font-weight: 600;">Mitigation:</span> ${escapeHtml(mitigationText)}
+            </div>
+          </td>
           <td><code class="finding-location">${escapeHtml(f.file_path)}:${f.line_number}</code></td>
-          <td style="color: var(--text-secondary); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${evidenceText}</td>
+          <td style="color: var(--text-secondary); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${evidenceText}</td>
         `;
 
         // Drawer row
@@ -2941,12 +2949,30 @@
         drawerTr.id = `detail-${idx}`;
         drawerTr.className = 'detail-drawer';
         drawerTr.innerHTML = `
-          <td colspan="5">
-            <div class="detail-grid">
+          <td colspan="6">
+            <div class="detail-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px;">
               <div class="detail-block">
                 <div class="detail-title">Vulnerability Description &amp; Code Sink</div>
                 <p class="detail-description">${escapeHtml(f.description)}</p>
                 ${f.sink_code ? `<pre class="code-view">${escapeHtml(f.sink_code)}</pre>` : ''}
+              </div>
+              <div class="detail-block" style="border-left: 3px solid var(--accent-primary, #0284c7); background: var(--bg-surface-elevated, rgba(2, 132, 199, 0.04));">
+                <div class="detail-title" style="color: var(--accent-primary, #0284c7); display: flex; align-items: center; gap: 6px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  Remediation &amp; Mitigation Guidance (For QA Testers &amp; Devs)
+                </div>
+                <p class="detail-description" style="color: var(--text-primary); font-size: 13px; line-height: 1.5; font-weight: 500;">
+                  ${escapeHtml(mitigationText)}
+                </p>
+                ${f.patch_spec && f.patch_spec.search_block ? `
+                  <div style="margin-top: 8px; font-size: 11px; color: #10b981; font-weight: 600;">
+                    ✓ Automated Speculative Patch Generated Below
+                  </div>
+                ` : `
+                  <div style="margin-top: 8px; font-size: 11px; color: #d97706; font-weight: 600;">
+                    ⚠ Architectural / Manual Mitigation Advised (Automated replacement avoided to protect custom logic)
+                  </div>
+                `}
               </div>
               <div class="detail-block">
                 <div class="detail-title">Deterministic Canary Oracle Probing</div>

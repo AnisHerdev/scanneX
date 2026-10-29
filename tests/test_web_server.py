@@ -226,3 +226,13 @@ def test_dashboard_log_contrast_tokens_and_classes(client):
     assert ".event-semgrep" in html
     assert ".event-bandit" in html
     assert ".event-malware" in html
+
+def test_dashboard_mitigation_elements(client):
+    """Ensure dashboard table and drawer render mitigation guidance elements."""
+    res = client.get("/")
+    assert res.status_code == 200
+    html = res.data.decode("utf-8")
+
+    assert "Mitigation Measure" in html
+    assert "Remediation &amp; Mitigation Guidance (For QA Testers &amp; Devs)" in html
+    assert "mitigationText" in html

@@ -42,6 +42,8 @@ class MarkdownExporter:
                 md.append(f"- **Vulnerability Type:** `{f.vuln_type}` ({f.cwe})")
                 md.append(f"- **Source:** `{f.source}`")
                 md.append(f"- **Description:** {f.description}")
+                if f.mitigation:
+                    md.append(f"- **Recommended Mitigation:** {f.mitigation}")
 
                 is_placeholder_sink = (
                     not f.sink_code
