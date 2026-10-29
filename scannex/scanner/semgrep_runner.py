@@ -71,8 +71,8 @@ class SemgrepRunner:
         if not self.target_dir.exists():
             return []
 
-        use_docker = self._is_docker_available()
         cli_bin = self._find_cli_binary()
+        use_docker = (cli_bin is None) and self._is_docker_available()
 
         if not use_docker and not cli_bin:
             logger.warning("Semgrep is not available via Docker or native CLI; skipping scan.")

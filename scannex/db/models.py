@@ -64,6 +64,7 @@ class PatchSpec(BaseModel):
     replace_block: str
     unified_diff: str = ""
     explanation: str = ""
+    mitigation: str = ""
     applied_successfully: bool = False
     retest_verified: bool = False
 
@@ -82,6 +83,7 @@ class Finding(BaseModel):
     source: str = "static_bandit"  # static_semgrep, static_bandit, ai_hunter
     status: FindingStatus = FindingStatus.NEEDS_VALIDATION
     verifier_notes: Optional[str] = None
+    mitigation: str = ""
     probe_spec: Optional[ProbeSpec] = None
     probe_result: Optional[ProbeResult] = None
     patch_spec: Optional[PatchSpec] = None
